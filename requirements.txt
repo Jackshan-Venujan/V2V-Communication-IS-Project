@@ -1,0 +1,19 @@
+# requirements.txt
+# Install all with: pip install -r requirements.txt
+
+cryptography==42.0.5    # PyCA: AES-GCM, ECDSA, ECDH, X.509, HMAC, SHA-256
+pycryptodome==3.20.0 # Extra cipher implementations, legacy support
+
+paho-mqtt==1.6.1                # MQTT client: publish/subscribe to Mosquitto broker
+
+flask==3.0.3                    # Lightweight web framework for the dashboard
+
+requests==2.31.0                # HTTP client: dashboard polls vehicle node REST API
+
+pytest==8.1.1                   # Test runner for unit and integration tests
+
+pytest-cov==4.1.0               # Test coverage reporting
+
+python-dateutil==2.9.0          # Timestamp parsing and timezone handling
+
+dataclasses-json==0.6.4         # JSON serialization for BSM dataclass
