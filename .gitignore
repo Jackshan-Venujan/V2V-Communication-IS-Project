@@ -1,0 +1,82 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Pytest & Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+# Security & Sensitive Files
+# Private keys and certificates (IMPORTANT: Do not commit private keys!)
+*_key.pem
+*.key
+*.private
+*.pfx
+*.p12
+
+
+# Environment files with sensitive data
+.env
+.env.local
+.env.*.local
+
+# Log files (may contain sensitive information)
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Build & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Node (if using Node.js components)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# System files
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE specific files
+.vscode/settings.json
+.idea/workspace.xml
+.project
+.pydevproject
+
+# Package manager files (optional - uncomment if needed)
+# poetry.lock
+# Pipfile.lock
+
+# Temporary files
+*.tmp
+*.temp
+*~

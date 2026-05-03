@@ -8,7 +8,7 @@ Run the following commands in Windows PowerShell:
 **1. Create and activate the virtual environment**
 ```powershell
 python -m venv v2v_venv
-.\v2v_venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 **2. Install requirements**
@@ -24,9 +24,13 @@ python ca\ca.py
 **4. Issue certs for vehicle-a and vehicle-b**
 ```powershell
 # (Example command based on setup instructions)
-python ca\ca.py issue vehicle-a
-python ca\ca.py issue vehicle-b
+python ca/issue_cert.py --vehicle-id vehicle-a --output-dir ca/certs
+python ca/issue_cert.py --vehicle-id vehicle-b --output-dir ca/certs
 ```
+
+**4. Verify certs for vehicle-a and vehicle-b**
+
+
 
 **5. Start vehicle A**
 ```powershell
