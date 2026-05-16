@@ -1,0 +1,2948 @@
+=== PAGE 1 ===
+V ehicle-to-V ehicle (V2V)
+Communication Security
+A Complete Be ginner's Guide to The ory and Pr actic e
+What Y ou Will Learn
+ V2V comm unication fundamen tals and standards
+ Cryptographic primitiv es with real-w orld analogies
+ Public Key Infrastructure (PKI) from scratc h
+ Threat mo delling and attac k taxonom y
+ F ull Python implemen tation, step b y step
+ A ttac k demonstration and detection scripts
+ Do c k er and t w o-laptop deplo ymen t guides
+CA Serv er V ehicle A V ehicle Bissues cert
+issues certsecure V2V
+
+=== PAGE 2 ===
+V2V Comm unication Securit y
+Prepared for Information Securit y Education
+Complete Beginner to Practitioner P ath w a y
+April 25, 2026
+2 Be ginner's Guide
+
+=== PAGE 3 ===
+Abstract
+This do cumen t is a comprehensiv e, end-to-end guide to understanding and implemen t-
+ing securit y for V ehicle-to-V ehicle (V2V) comm unication systems. It is written sp ecif-
+ically for readers with zero practical exp erience in information securit y but who
+p ossess basic theoretical familiarit y with computing concepts.
+V2V comm unication allo ws v ehicles on a road to exc hange real-time safet y messages
+ suc h as I am braking hard or There is ice 300 metres ahead  without passing
+through a cen tral serv er. This mak es V2V extraordinarily p o w erful for acciden t pre-
+v en tion but also extraordinarily dangerous if an attac k er can forge, repla y , or suppress
+those messages.
+This guide pro ceeds in four ma jor parts:
+1. Theory F oundation  Ev ery cryptographic primitiv e, securit y concept, and
+net w orking idea is explained from rst principles using ev eryda y analogies, then
+giv en its formal tec hnical denition. No concept is assumed.
+2. Arc hitecture and Design  The full system blueprin t is presen ted, with de-
+tailed diagram descriptions, Mermaid.js prompts, and TikZ co de for ev ery com-
+p onen t.
+3. Implemen tation Guide  Thirteen implemen tation steps w alk through ev-
+ery mo dule of the pro ject with small, line-b y-line annotated co de segmen ts and
+complete prompts for Claude Code to generate pro duction-ready les.
+4. Reference and App endices  A glossary , standards bibliograph y , command
+c heat sheet, and troublesho oting guide serv e as a p ermanen t reference.
+By the end of this do cumen t y ou will b e able to explain V2V securit y to a tec hni-
+cal audience, build a w orking sim ulation with certicate-based m utual authen tication,
+AES-256-GCM encrypted messages, and repla y/tamp er detection  and demonstrate
+real attac k scenarios b eing detected and blo c k ed in real time.
+1
+
+=== PAGE 4 ===
+V2V Comm unication Securit y
+T arget audience: Undergraduate/p ostgraduate studen ts, junior engineers, or hobb y-
+ists en tering the eld of v ehicular net w ork securit y .
+Prerequisites: Basic Python familiarit y , understanding of what a net w ork pac k et is,
+and access to a Lin ux/macOS/WSL terminal.
+2 Be ginner's Guide
+
+=== PAGE 5 ===
+Contents
+Abstract 1
+I Theory F oundation 9
+1 What is V ehicle-to-V ehicle (V2V) Comm unication? 10
+1.1 The Big Picture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.2 Ho w Cars T alk to Eac h Other  T ec hnical Standards . . . . . . . . . . 11
+1.2.1 DSR C  Dedicated Short-Range Comm unications . . . . . . . 11
+1.2.2 C-V2X  Cellular V ehicle-to-Ev erything . . . . . . . . . . . . . 11
+1.3 Use Cases: What Can V2V A ctually Do? . . . . . . . . . . . . . . . . . 12
+2 Wh y Is Securit y Critical in V2V? 13
+2.1 What Happ ens Without Securit y? . . . . . . . . . . . . . . . . . . . . . 13
+2.2 The CIA T riad Applied to V2V . . . . . . . . . . . . . . . . . . . . . . 13
+2.2.1 Conden tialit y in V2V . . . . . . . . . . . . . . . . . . . . . . . 13
+2.2.2 In tegrit y in V2V . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2.3 A v ailabilit y in V2V . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3 Cryptographic Primitiv es 15
+3.1 Symmetric Encryption  AES-256-GCM . . . . . . . . . . . . . . . . . 15
+3.2 Asymmetric Encryption  RSA and ECC . . . . . . . . . . . . . . . . 16
+3.3 Digital Signatures  ECDSA . . . . . . . . . . . . . . . . . . . . . . . 17
+3.4 Key Exc hange  ECDH . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.5 Hash F unctions  SHA-256 . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.6 MA C and HMA C  Message Authen tication Co des . . . . . . . . . . . 19
+3.7 Nonces and Repla y Prev en tion . . . . . . . . . . . . . . . . . . . . . . . 20
+4 Public Key Infrastructure and Certicate Authorities 21
+4.1 What is a Certicate Authorit y? . . . . . . . . . . . . . . . . . . . . . . 21
+4.2 X.509 Certicates  Field b y Field . . . . . . . . . . . . . . . . . . . . 21
+3
+
+=== PAGE 6 ===
+CONTENTS V2V Comm unication Securit y
+4.3 Certicate Chain of T rust . . . . . . . . . . . . . . . . . . . . . . . . . 22
+4.4 Pseudon ymous Certicates in V2V . . . . . . . . . . . . . . . . . . . . 22
+5 V2V Securit y Threat Mo del 24
+5.1 Repla y A ttac ks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+5.2 Message T amp ering / Man-in-the-Middle A ttac ks . . . . . . . . . . . . 25
+5.3 Sybil A ttac ks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+5.4 Denial of Service A ttac ks . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+5.5 Ea v esdropping . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+6 Authen tication Proto cols in V2V 27
+6.1 What is Mutual Authen tication? . . . . . . . . . . . . . . . . . . . . . 27
+6.2 Challenge-Resp onse Proto cols . . . . . . . . . . . . . . . . . . . . . . . 27
+6.3 Session Keys and F orw ard Secrecy . . . . . . . . . . . . . . . . . . . . . 28
+6.4 The Three-W a y Authen tication Handshak e . . . . . . . . . . . . . . . . 28
+I I Pro ject Arc hitecture and Design 29
+7 Pro ject Ov erview and Goals 30
+7.1 What W e Are Building . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+7.2 Securit y Prop erties A c hiev ed . . . . . . . . . . . . . . . . . . . . . . . . 30
+8 T ec hnical Stac k 31
+8.1 Language: Python 3.x . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+8.2 Cryptographic Libraries . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+8.2.1 cryptograph y (PyCA) . . . . . . . . . . . . . . . . . . . . . . . 31
+8.2.2 PyCrypto dome . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+8.3 Net w ork La y er . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+8.3.1 TCP So c k ets . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+8.3.2 MQTT (Message Queuing T elemetry T ransp ort) . . . . . . . . . 32
+8.4 W eb Dash b oard: Flask . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+9 Detailed Arc hitecture Diagrams 34
+9.1 D1  Ov erall System Arc hitecture . . . . . . . . . . . . . . . . . . . . 34
+9.2 D2  Authen tication Handshak e Sequence . . . . . . . . . . . . . . . . 35
+9.3 D3  Cryptographic Message Structure . . . . . . . . . . . . . . . . . 36
+9.4 D4  Threat Mo del Diagram . . . . . . . . . . . . . . . . . . . . . . . 36
+9.5 D5  PKI Certicate Chain . . . . . . . . . . . . . . . . . . . . . . . . 36
+9.6 D6  MQTT T opic Structure . . . . . . . . . . . . . . . . . . . . . . . 37
+9.7 D7  Flask Dash b oard Wireframe . . . . . . . . . . . . . . . . . . . . 37
+4 Be ginner's Guide
+
+=== PAGE 7 ===
+CONTENTS V2V Comm unication Securit y
+9.8 D8  Do c k er Net w ork T op ology . . . . . . . . . . . . . . . . . . . . . . 38
+9.9 Pro ject F older Structure . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+I I I Complete Pro ject Implemen tation Guide 40
+10 Step 1  En vironmen t Setup 41
+10.1 Theory: Wh y Virtual En vironmen ts? . . . . . . . . . . . . . . . . . . . 41
+10.2 Setup Commands . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+10.3 requiremen ts.txt . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+10.4 T w o-V ehicle Conguration on One Mac hine . . . . . . . . . . . . . . . 42
+10.5 T w o-Laptop Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+11 Step 2  Certicate Authorit y Implemen tation 44
+11.1 Theory: What the CA Do es . . . . . . . . . . . . . . . . . . . . . . . . 44
+11.2 Small Co de Segmen t: Key Generation . . . . . . . . . . . . . . . . . . . 44
+11.3 F ull Claude Co de Prompt for Step 2 . . . . . . . . . . . . . . . . . . . 45
+11.4 Exp ected Output . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+12 Step 3  Cryptographic Mo dule 47
+12.1 Theory: Wh y AES-GCM + ECDH + ECDSA T ogether? . . . . . . . . 47
+12.2 Small Co de Segmen t: AES-GCM Encrypt/Decrypt . . . . . . . . . . . 47
+12.3 F ull Claude Co de Prompt for Step 3 . . . . . . . . . . . . . . . . . . . 49
+13 Step 4  Authen tication Proto col 51
+13.1 Theory: The Handshak e in Detail . . . . . . . . . . . . . . . . . . . . . 51
+13.2 Small Co de Segmen t: HELLO Message . . . . . . . . . . . . . . . . . . 51
+13.3 F ull Claude Co de Prompt for Step 4 . . . . . . . . . . . . . . . . . . . 52
+14 Step 5  V2V Message Proto col 55
+14.1 Theory: Basic Safet y Messages (BSM) . . . . . . . . . . . . . . . . . . 55
+14.2 Small Co de Segmen t: BSM Structure . . . . . . . . . . . . . . . . . . . 56
+14.3 F ull Claude Co de Prompt for Step 5 . . . . . . . . . . . . . . . . . . . 57
+15 Step 6  Main V ehicle No de 60
+15.1 Theory: So c k et Programming and Threading . . . . . . . . . . . . . . . 60
+15.2 Small Co de Segmen t: So c k et Serv er . . . . . . . . . . . . . . . . . . . . 60
+15.3 F ull Claude Co de Prompt for Step 6 . . . . . . . . . . . . . . . . . . . 62
+16 Step 7  Flask Dash b oard 64
+16.1 Theory: Flask REST API . . . . . . . . . . . . . . . . . . . . . . . . . 64
+16.2 F ull Claude Co de Prompt for Step 7 . . . . . . . . . . . . . . . . . . . 64
+5 Be ginner's Guide
+
+=== PAGE 8 ===
+CONTENTS V2V Comm unication Securit y
+17 Step 8  A ttac k Demonstration Scripts 66
+17.1 8a  Repla y A ttac k . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+17.2 8b  T amp er A ttac k . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+17.3 8c  Man-in-the-Middle A ttac k . . . . . . . . . . . . . . . . . . . . . . 68
+18 Step 9  T esting Guide 71
+18.1 Running the F ull Demo . . . . . . . . . . . . . . . . . . . . . . . . . . . 71
+18.2 Exp ected Successful Authen tication Output . . . . . . . . . . . . . . . 72
+18.3 Ev aluator Demo Script . . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+19 Step 10  Securit y Ev aluation Metrics 74
+19.1 Measuremen t Metho dology . . . . . . . . . . . . . . . . . . . . . . . . . 75
+19.2 F ull Claude Co de Prompt  Ev aluation Script . . . . . . . . . . . . . 76
+20 Step 11  MQTT Net w ork Setup 78
+20.1 Theory: MQTT vs TCP So c k ets . . . . . . . . . . . . . . . . . . . . . . 78
+20.2 MQTT Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 78
+20.3 F ull Claude Co de Prompt  MQTT V ehicle No de V arian t . . . . . . . 79
+21 Step 12  Do c k er Setup 80
+21.1 Theory: What Do c k er Pro vides . . . . . . . . . . . . . . . . . . . . . . 80
+21.2 Do c k erle . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 80
+21.3 do c k er-comp ose.yml . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 81
+21.4 Do c k er Commands . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+22 Step 13  T w o-Laptop Setup Guide 84
+22.1 Net w ork Conguration . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+22.2 T roublesho oting Common Issues . . . . . . . . . . . . . . . . . . . . . . 86
+IV Reference and App endices 87
+A Glossary 88
+B Standards References 91
+C F urther Reading 92
+D Quic k-Reference Command Cheat Sheet 93
+E T roublesho oting Guide 96
+6 Be ginner's Guide
+
+=== PAGE 9 ===
+List of Figures
+4.1 Certicate Chain of T rust in V2V PKI . . . . . . . . . . . . . . . . . . 22
+5.1 Repla y A ttac k  Captured Message Retransmission . . . . . . . . . . . 24
+6.1 V2V F our-Step Authen tication Handshak e . . . . . . . . . . . . . . . . 28
+9.1 D1: Ov erall V2V System Arc hitecture . . . . . . . . . . . . . . . . . . 34
+9.2 D3: Cryptographic La y ering of a V2V BSM (Sign-then-Encrypt) . . . . 36
+9.3 D4: Threat Mo del  A ttac k V ectors and Defences . . . . . . . . . . . 36
+9.4 D7: Flask Dash b oard Wireframe . . . . . . . . . . . . . . . . . . . . . . 37
+9.5 D8: Do c k er Con tainer Net w ork T op ology . . . . . . . . . . . . . . . . . 38
+7
+
+=== PAGE 10 ===
+List of T ables
+1.1 DSR C vs C-V2X Comparison . . . . . . . . . . . . . . . . . . . . . . . 12
+2.1 CIA T riad Applied to V2V . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3.1 RSA vs ECC Key Size Equiv alence . . . . . . . . . . . . . . . . . . . . 17
+4.1 X.509 Certicate Fields Explained . . . . . . . . . . . . . . . . . . . . . 22
+7.1 Securit y Prop erties and Ho w W e A c hiev e Them . . . . . . . . . . . . . 30
+9.1 D6: MQTT T opic Structure . . . . . . . . . . . . . . . . . . . . . . . . 37
+12.1 Cryptographic Algorithm Selection Rationale . . . . . . . . . . . . . . . 47
+19.1 Securit y Ev aluation Metrics . . . . . . . . . . . . . . . . . . . . . . . . 75
+20.1 MQTT vs TCP So c k ets for V2V Sim ulation . . . . . . . . . . . . . . . 78
+22.1 Common Errors and Solutions . . . . . . . . . . . . . . . . . . . . . . . 86
+B.1 Key V2V Securit y Standards . . . . . . . . . . . . . . . . . . . . . . . . 91
+8
+
+=== PAGE 11 ===
+Part I
+Theory F oundation
+9
+
+=== PAGE 12 ===
+Chapter 1
+What is V ehicle-to-V ehicle (V2V)
+Communication?
+1.1 The Big Picture
+Imagine y ou are driving on a motorw a y at 100 km/h. A lorry three cars ahead of
+y ou suddenly brak es. Y ou cannot see it b ecause of the cars in b et w een. Normally y ou
+w ould only learn ab out the braking when the car directly in fron t of y ou brak es  b y
+whic h time y ou migh t ha v e less than one second to react.
+No w imagine ev ery v ehicle on that road is w earing a tin y in visible radio badge that
+con tin uously broadcasts: I am V ehicle XYZ. I am at this GPS lo cation. I am tra v elling
+at 100 km/h. My brak es are not applied. And then, within milliseconds of the lorry
+braking, ev ery v ehicle within 300 metres receiv es the message: Emergency braking
+ev en t detected! Y our car can b egin braking automatically , or at least giv e y ou a loud
+w arning, b efor e y ou can ev en see the problem.
+This is V2V comm unication in its simplest form.
+Real-Life Analogy
+The W alkie-T alkie High w a y: Think of V2V as ev ery car on the road b eing
+equipp ed with a w alkie-talkie tuned to the same c hannel. Cars are constan tly
+whisp ering safet y up dates to their neigh b ours. The crucial dierence from real
+w alkie-talkies is that V2V is standar dise d (all cars sp eak the same language),
+extr emely fast (messages tra v el in under 100 milliseconds), and op er ates auto-
+matic al ly without an y h uman pressing a button.
+10
+
+=== PAGE 13 ===
+CHAPTER 1. WHA T IS VEHICLE-TO-VEHICLE (V2V) COMMUNICA TION? V2V Comm unication Securit y
+1.2 Ho w Cars T alk to Eac h Other  T ec hnical Stan-
+dards
+Key Concept
+F ormal Denition: V ehicle-to-V ehicle (V2V) comm unication is a wireless ad-
+ho c net w ork tec hnology that enables direct, p eer-to-p eer exc hange of safet y-
+critical data b et w een nearb y v ehicles without relying on cellular infrastructure
+or a cen tral serv er. It is a subset of the broader category called V ehicular A d
+Ho c Networks (V ANETs) .
+T w o ma jor comp eting standards go v ern ho w v ehicles comm unicate:
+1.2.1 DSR C  Dedicated Short-Range Comm unications
+DSR C is based on the IEEE 802.11p standard (a v ariation of ordinary Wi-Fi adapted
+for high-sp eed v ehicular en vironmen ts). Key facts:
+ Op erates in the 5.9 GHz frequency band
+ Comm unication range: up to 1000 metres
+ Latency: under 100 milliseconds (crucial for safet y)
+ The underlying securit y standard is IEEE 1609.2
+ Supp orted b y: early US mandates, man y V2X test programmes
+Real-Life Analogy
+DSR C is lik e the CB (Citizens Band) radio that truc k driv ers ha v e used for
+decades  it is a dedicated, alw a ys-on radio c hannel set aside just for v ehicles,
+op erating indep enden tly of mobile phone net w orks. If the cell to w er go es do wn,
+DSR C still w orks.
+1.2.2 C-V2X  Cellular V ehicle-to-Ev erything
+C-V2X uses 4G L TE / 5G NR tec hnology . It has t w o mo des:
+ Mo de 3 (Net w ork mo de): messages route through cellular base stations (lik e
+y our phone calls)
+ Mo de 4 (Sidelink / Direct mo de): v ehicles comm unicate directly without a
+base station, similar to DSR C
+11 Be ginner's Guide
+
+=== PAGE 14 ===
+CHAPTER 1. WHA T IS VEHICLE-TO-VEHICLE (V2V) COMMUNICA TION? V2V Comm unication Securit y
+T able 1.1: DSR C vs C-V2X Comparison
+F eature DSR C (802.11p) C-V2X (L TE/5G)
+Radio tec hnology Wi-Fi deriv ativ e Cellular
+Range (direct) Up to 1000 m Up to 5001000 m
+Latency < 10 ms 10100 ms
+Infrastructure needed No (ad ho c) No for Mo de 4
+Securit y standard IEEE 1609.2 3GPP TS 33.185
+Deplo ymen t maturit y High (older) Gro wing (new er)
+1.3 Use Cases: What Can V2V A ctually Do?
+1. F orw ard Collision W arning (F CW): A car in fron t brak es suddenly . Before
+y ou can see the brak e ligh ts, y our car kno ws and w arns y ou.
+2. In tersection Mo v emen t Assist (IMA): A t a blind in tersection, cars announce
+their approac h so driv ers/autonomous systems can a v oid collisions.
+3. Emergency Electronic Brak e Ligh t (EEBL): Hard braking 10 cars ahead
+triggers a w arning in all follo wing v ehicles sim ultaneously .
+4. Do Not P ass W arning (DNPW): A v ehicle w arns y ou not to o v ertak e b ecause
+it detects oncoming trac y ou cannot see.
+5. Emergency V ehicle Preemption: An am bulance broadcasts its presence;
+other v ehicles kno w to pull o v er.
+6. T rac Flo w Co ordination: Dense plato oning of truc ks with cen timetre-lev el
+gap accuracy , sa ving fuel.
+Key Concept
+SAE J2735  The Message Standard: All V2V messages follo w the Basic
+Safety Message (BSM) format dened in SAE J2735. A BSM is a data pac k et
+broadcast 10 times p er second con taining: v ehicle ID (pseudon ymous), GPS
+p osition, sp eed, heading, acceleration, and brak e status. Think of it as a v ehicle's
+con tin uously up dated T witter p ost to its neigh b ours.
+12 Be ginner's Guide
+
+=== PAGE 15 ===
+Chapter 2
+Why Is Security Critical in V2V?
+2.1 What Happ ens Without Securit y?
+Let us think through a simple attac k scenario with no cryptograph y at all:
+A ttac k Scenario  The Phan tom Braking Car:
+Without authen tication, an attac k er parks b y the roadside with a laptop and a
+radio transmitter. They broadcast a fak e BSM claiming to b e a car 50 metres
+ahead, tra v elling at 100 km/h, with emergency braking engaged. Ev ery v ehicle
+within 300 metres receiv es this fak e message. Dozens of cars brak e hard. A pile-up
+ensues. The attac k er caused a m ulti-car acciden t from a car park.
+This is not a theoretical scenario. Researc hers at the Univ ersit y of Mic higan demon-
+strated similar attac ks in con trolled studies as early as 2011. The stak es are not data
+theft  they are h uman liv es .
+2.2 The CIA T riad Applied to V2V
+Key Concept
+The CIA T riad is the foundational framew ork of information securit y . It has
+three comp onen ts: C onden tialit y , I n tegrit y , and A v ailabilit y . Ev ery securit y
+con trol w e build maps to one or more of these three prop erties.
+2.2.1 Conden tialit y in V2V
+What it means: Only authorised parties can read the message con ten t.
+V2V c hallenge: BSMs are broadcast to ev ery one in range  b y design they are
+13
+
+=== PAGE 16 ===
+CHAPTER 2. WHY IS SECURITY CRITICAL IN V2V? V2V Comm unication Securit y
+public. Ho w ev er, w e do not w an t to leak the driv er's iden tit y or precise lo cation o v er
+time (priv acy concern). Also, some V2V messages (e.g., eet managemen t commands)
+m ust remain priv ate.
+Ho w w e ac hiev e it: Pseudonymous c ertic ates (v ehicles use rotating fak e IDs) and
+end-to-end encryption for sensitiv e messages.
+2.2.2 In tegrit y in V2V
+What it means: Messages cannot b e altered without detection.
+V2V c hallenge: An attac k er who in tercepts a I am tra v elling at 80 km/h message
+and c hanges it to I am tra v elling at 20 km/h could cause unnecessary braking.
+Ho w w e ac hiev e it: Digital signatur es (ECDSA) and message authentic ation c o des
+(HMA C).
+2.2.3 A v ailabilit y in V2V
+What it means: The system k eeps w orking ev en under attac k.
+V2V c hallenge: An attac k er o o ding the c hannel with fak e messages can dro wn out
+legitimate ones (Denial of Service).
+Ho w w e ac hiev e it: Rate limiting, source authen tication, and c hannel managemen t
+proto cols.
+T able 2.1: CIA T riad Applied to V2V
+CIA Prop ert y V2V Threat Cryptographic Defence
+Conden tialit y Lo cation trac king, iden tit y ex-
+p osurePseudon ymous certs, encryp-
+tion
+In tegrit y Message tamp ering, fak e BSMs ECDSA signatures, HMA C
+A v ailabilit y DoS o o ding, jamming Rate limiting, misb eha viour de-
+tection
+14 Be ginner's Guide
+
+=== PAGE 17 ===
+Chapter 3
+Cryptographic Primitives
+Real-Life Analogy
+Cryptograph y as a T o olb o x: If securit y is a fortress, cryptograph y is y our
+to olb o x of lo c ks, seals, k eys, and safes. Eac h to ol solv es a sp ecic problem. No
+single to ol solv es all problems. A go o d securit y system uses the righ t to ol for the
+righ t job.
+3.1 Symmetric Encryption  AES-256-GCM
+Real-Life Analogy
+The Lo c k ed Bo x Analogy: Alice puts a message in a b o x and lo c ks it with a
+padlo c k. She giv es Bob the same key she used to lo c k it. Bob unlo c ks the b o x
+and reads the message. The same k ey lo c ks AND unlo c ks. This is symmetric
+encryption  one shared k ey for b oth op erations.
+Key Concept
+AES-256-GCM stands for:
+ AES  A dv anced Encryption Standard: the gold-standard blo c k cipher,
+appro v ed b y NIST, used ev erywhere from HTTPS to Wi-Fi to hard driv e
+encryption.
+ 256  Key length in bits. 256-bit k eys mak e brute-force attac ks computa-
+tionally imp ossible ( 2256com binations = more than atoms in the observ able
+univ erse).
+ GCM  Galois/Coun ter Mo de: an encryption mo de that pro vides b oth
+c ondentiality (encrypts the data) AND inte grity (pro duces an authen tica-
+15
+
+=== PAGE 18 ===
+CHAPTER 3. CR YPTOGRAPHIC PRIMITIVES V2V Comm unication Securit y
+tion tag that detects tamp ering). This is called Authen ticated Encryption
+with Asso ciated Data (AEAD).
+Wh y AES-GCM for V2V?
+ Hardw are-accelerated on mo dern CPUs (AES-NI instructions): extremely fast
+ Pro vides encryption AND in tegrit y in one op eration
+ The 96-bit nonce prev en ts ciphertext rep etition
+ Industry standard (used in TLS 1.3, IEEE 1609.2)
+Securit y W arning
+Nev er reuse a nonce! In AES-GCM, reusing the same nonce with the same
+k ey completely destro ys securit y  an attac k er can reco v er the k ey . Alw a ys
+generate a fresh random nonce for ev ery message.
+3.2 Asymmetric Encryption  RSA and ECC
+Real-Life Analogy
+The P adlo c k and Key Analogy: Alice giv es Bob an op en p ad lo ck (her public
+k ey). An y one can put a message in a b o x, snap the padlo c k sh ut, and send it
+to Alice. But only Alice has the k ey to op en it (her priv ate k ey). The padlo c k
+is the public k ey  share it freely . The k ey is the priv ate k ey  guard it with
+y our life.
+Key Concept
+Asymmetric Encryption uses a k ey pair :
+ Public k ey : Share with ev ery one. Used to encrypt data TO y ou, or to
+v erify signatures FR OM y ou.
+ Priv ate k ey : Keep secret forev er. Used to decrypt data sen t TO y ou, or
+to create signatures.
+The mathematical relationship: an ything encrypted with the public k ey can
+only b e decrypted with the matc hing priv ate k ey , and vice v ersa. This w orks
+b ecause of hard mathematical problems (factoring large primes for RSA; discrete
+logarithms on elliptic curv es for ECC).
+RSA vs ECC for V2V:
+16 Be ginner's Guide
+
+=== PAGE 19 ===
+CHAPTER 3. CR YPTOGRAPHIC PRIMITIVES V2V Comm unication Securit y
+RSA with 2048-bit k eys oers strong securit y but is slo w and uses large k eys  a
+problem when v ehicles m ust pro cess dozens of BSMs p er second. ECC (Elliptic Curv e
+Cryptograph y) ac hiev es equiv alen t securit y with m uc h smaller k eys :
+T able 3.1: RSA vs ECC Key Size Equiv alence
+RSA Key Size ECC Key Size Securit y Lev el
+1024 bits 160 bits 80-bit
+2048 bits 224 bits 112-bit
+3072 bits 256 bits 128-bit
+V2V uses ECC (sp ecically P-256 curv e) b ecause small k eys mean small certi-
+cates, whic h t in tin y BSM pac k ets and v erify quic kly .
+3.3 Digital Signatures  ECDSA
+Real-Life Analogy
+The W ax Seal Analogy: In mediev al times, a king w ould press his unique
+signet ring in to w ax on an en v elop e. An y one who receiv ed the letter could v erify
+it w as authen tic (the seal pattern is unique to the king) and unmo died (a brok en
+seal means tamp ering). ECDSA is the cryptographic equiv alen t: a v ehicle signs
+its BSM with its priv ate k ey , and an y receiv er can v erify the signature using the
+v ehicle's public k ey  without needing the priv ate k ey .
+Key Concept
+ECDSA (Elliptic Curv e Digital Signature Algorithm) pro duces a signature (r, s)
+computed from:
+1. The message (or its hash)
+2. The signer's priv ate k ey
+3. A random nonce k
+V erication uses only the signer's public k ey . Key prop erties:
+ Authen tication: only the holder of the priv ate k ey could ha v e pro duced
+that signature
+ Non-repudiation: the signer cannot later den y signing the message
+ In tegrit y: an y mo dication to the message in v alidates the signature
+17 Be ginner's Guide
+
+=== PAGE 20 ===
+CHAPTER 3. CR YPTOGRAPHIC PRIMITIVES V2V Comm unication Securit y
+Securit y W arning
+ECDSA nonce reuse is catastrophic. If the same random nonce k is used
+for t w o dieren t signatures with the same priv ate k ey , the priv ate k ey can b e
+algebr aic al ly r e c over e d b y an attac k er. Son y's Pla yStation 3 w as hac k ed exactly
+this w a y . Alw a ys use a cryptographically secure random n um b er generator.
+3.4 Key Exc hange  ECDH
+Real-Life Analogy
+The P ain t-Mixing Analogy (Die-Hellman): Alice and Bob b oth start
+with the same public colour (sa y , y ello w). Alice pic ks a secret colour (red) and
+mixes it with y ello w, getting orange. Bob pic ks a secret colour (blue) and mixes
+it with y ello w, getting green. They exc hange their mixed colours op enly . Alice
+mixes Bob's green with her secret red; Bob mixes Alice's orange with his secret
+blue. Both end up with the same nal colour (bro wn). An ea v esdropp er sees y el-
+lo w, orange, and green  but cannot compute the nal bro wn without kno wing
+either secret colour.
+Key Concept
+ECDH (Elliptic Curv e Die-Hellman) allo ws t w o parties to establish a shar e d
+se cr et o v er a public, insecure c hannel, without ev er transmitting the secret itself.
+The shared secret is then used to deriv e a symmetric session k ey for fast AES-
+GCM encryption.
+ECDHE (with the E = Ephemeral) generates fresh k ey pairs for eac h session,
+pro viding F orwar d Se cr e cy : if to da y's session k ey is compromised, past and future
+sessions remain secure.
+3.5 Hash F unctions  SHA-256
+Real-Life Analogy
+The Fingerprin t Analogy: Ev ery h uman has unique ngerprin ts. A nger-
+prin t is a compact represen tation that uniquely iden ties a p erson, but y ou can-
+not reconstruct the p erson from their ngerprin t. SHA-256 is a ngerprin t for
+data: an y le or message, no matter ho w large, pro duces a unique 256-bit (32-
+b yte) ngerprin t called a digest or hash . Change ev en one bit in the input and
+the hash c hanges completely .
+18 Be ginner's Guide
+
+=== PAGE 21 ===
+CHAPTER 3. CR YPTOGRAPHIC PRIMITIVES V2V Comm unication Securit y
+Key Concept
+A cryptographic hash function maps arbitrary-length input to xed-length
+output with these prop erties:
+ Deterministic: same input alw a ys giv es same output
+ One-w a y (preimage resistance): cannot rev erse the hash to get input
+ Collision resistan t: computationally infeasible to nd t w o dieren t in-
+puts with the same hash
+ A v alanc he eect: one-bit c hange in input ⇒ completely dieren t output
+SHA-256 pro duces a 256-bit digest and is the NIST standard (SHA-2 family).
+3.6 MA C and HMA C  Message Authen tication Co des
+Real-Life Analogy
+The T amp er-Eviden t Seal Analogy: Imagine y ou order a pac k age and it
+arriv es with a stic k er that reads SEALED BY SENDER  3847AB. The co de
+on the stic k er w as computed using a secret only y ou and the sender kno w. If
+an y one tamp ers with the pac k age in transit, they cannot repro duce the correct
+co de without the secret, so the stic k er will not matc h. HMA C w orks the same
+w a y: it pro duces a tag using a shared secret k ey that pro v es b oth the message's
+in tegrit y AND the sender's iden tit y .
+Key Concept
+HMA C (Hash-based Message Authen tication Co de) is computed as:
+HMA C (K, M ) =H 
+(K⊕ opad )∥H((K⊕ ipad )∥M)
+where H is a hash function (SHA-256), K is the shared k ey , M is the message,
+and ipad/opad are constan ts. HMA C pro vides:
+ In tegrit y: an y mo dication to M pro duces a dieren t tag
+ Authen tication: only parties with K can pro duce a v alid tag
+Unlik e digital signatures, HMA C requires a shar e d secret  b oth parties m ust
+already ha v e the same k ey .
+19 Be ginner's Guide
+
+=== PAGE 22 ===
+CHAPTER 3. CR YPTOGRAPHIC PRIMITIVES V2V Comm unication Securit y
+3.7 Nonces and Repla y Prev en tion
+Real-Life Analogy
+The Unique Tic k et Stub Analogy: When y ou buy a concert tic k et, it has a
+unique barco de. The b ouncer scans it; once used, it is mark ed in the system. If
+y ou try to use it again, or if someone copied y our tic k et and tries to use it later,
+the system rejects it b ecause that stub has already b een redeemed. A nonc e in
+cryptograph y is a Num b er used ONCE  a unique random v alue attac hed to
+eac h message that the receiv er records and rejects if seen again.
+Key Concept
+A nonce is a random or pseudo-random n um b er that ma y only b e used once in
+a cryptographic comm unication. Com bined with timestamps , nonces prev en t
+r eplay attacks : an attac k er recording a v alid message and repla ying it later will
+b e rejected b ecause:
+1. The nonce has already b een seen (stored in a r eplay c ache )
+2. The timestamp is to o old (outside the acceptable repla y windo w, e.g., 5
+seconds)
+20 Be ginner's Guide
+
+=== PAGE 23 ===
+Chapter 4
+Public Key Infrastructure and
+Certicate Authorities
+4.1 What is a Certicate Authorit y?
+Real-Life Analogy
+The Go v ernmen t P assp ort Oce Analogy: Ho w do y ou pro v e to a foreign
+customs ocer that y ou are who y ou sa y y ou are? Y ou sho w a passp ort 
+a do cumen t issued and signe d b y y our go v ernmen t, whic h the customs ocer
+trusts. The go v ernmen t is the Certicate Authorit y (CA) ; y our passp ort is
+the digital certicate ; the customs ocer is a receiving v ehicle v erifying y our
+iden tit y . The CA's signature on y our certicate is the cryptographic equiv alen t
+of the go v ernmen t's stamp.
+Key Concept
+A Certicate Authorit y (CA) is a trusted third part y that:
+1. V eries the iden tit y of an en tit y (v ehicle, serv er, p erson)
+2. Issues a digital certicate binding that en tit y's iden tit y to their public
+k ey
+3. Signs the certicate with the CA's o wn priv ate k ey so an y one can v erify its
+authen ticit y using the CA's public k ey
+4.2 X.509 Certicates  Field b y Field
+An X.509 certicate is a standardised data structure. Here is what eac h eld means:
+21
+
+=== PAGE 24 ===
+CHAPTER 4. PUBLIC KEY INFRASTR UCTURE AND CER TIFICA TE A UTHORITIES V2V Comm unication Securit y
+T able 4.1: X.509 Certicate Fields Explained
+Field What It Means Example
+V ersion Certicate format v ersion 3
+Serial Num b er Unique ID assigned b y CA 0xA4B2...
+Issuer Who signed this certicate CN=V2V-Ro ot-CA
+Sub ject Who this certicate b elongs to CN=V ehicle-001
+V alidit y (Not Before) Certicate starts b eing v alid 2024-01-01
+V alidit y (Not After) Certicate expires 2025-01-01
+Sub ject Public Key The en tit y's public k ey ECDSA P-256 k ey
+Signature Algorithm Ho w the CA signed it SHA256withECDSA
+CA Signature The CA's digital signature (256-bit v alue)
+Extensions Extra info (k ey usage, etc.) k eyUsage: digitalSign
+4.3 Certicate Chain of T rust
+Real-w orld PKI uses a hierarc h y of certicates:
+Ro ot CA (self-signed)
+In termediate CA
+V ehicle A Cert V ehicle B Certsigns
+signs signsKept oine. Compromise =
+catastrophe.
+Can b e rev ok ed without re-
+placing Ro ot.
+Figure 4.1: Certicate Chain of T rust in V2V PKI
+4.4 Pseudon ymous Certicates in V2V
+Key Concept
+A k ey priv acy c hallenge in V2V: if ev ery v ehicle uses a p ermanent certicate
+with a xed iden tier, an observ er can trac k that v ehicle's lo cation indenitely
+b y correlating BSMs. T o solv e this, v ehicles use pseudon ymous certicates :
+ Eac h v ehicle is pre-loaded with man y short-liv ed certicates (e.g., v alid for
+5 min utes eac h)
+ V ehicles rotate certicates frequen tly
+ The CA kno ws the link b et w een pseudon yms and real iden tities (for mis-
+22 Be ginner's Guide
+
+=== PAGE 25 ===
+CHAPTER 4. PUBLIC KEY INFRASTR UCTURE AND CER TIFICA TE A UTHORITIES V2V Comm unication Securit y
+b eha viour rep orting), but observ ers do not
+This balances priv acy (unlink abilit y for observ ers) with accoun tabilit y (CA
+can rev ok e misb eha ving v ehicles).
+23 Be ginner's Guide
+
+=== PAGE 26 ===
+Chapter 5
+V2V Security Threat Model
+A threat mo del is a structured analysis of who migh t attac k y our system, what they
+w an t to ac hiev e, what capabilities they ha v e, and ho w y ou defend against eac h attac k.
+5.1 Repla y A ttac ks
+Real-Life Analogy
+The Recorded Do orb ell Analogy: A burglar records a neigh b our's v oice
+sa ying Coming, just a momen t! Then later, when the securit y guard calls, the
+burglar pla ys the recording to pretend someone is home. Repla y attac ks w ork
+the same w a y: an attac k er records a v alid V2V message (e.g., all clear, road is
+safe) and repla ys it later when conditions ha v e c hanged.
+Ho w it w orks in V2V:
+1. A ttac k er captures a v alid, signed BSM from V ehicle A at time T1
+2. A t time T2 (later, when the message is no longer accurate), attac k er retransmits
+the captured message unc hanged
+3. Without repla y protection, receiv ers w ould accept it as gen uine
+Defence: Timestamps (reject messages older than 5 seconds) + Nonces (main tain a
+cac he of recen tly seen nonces; reject duplicates).
+V ehicle A A ttac k er V ehicle B1. V alid BSM (T=0) 2. Repla y (T=10s, REJECTED)
+Timestamp to o old!
+Nonce already seen!
+Figure 5.1: Repla y A ttac k  Captured Message Retransmission
+24
+
+=== PAGE 27 ===
+CHAPTER 5. V2V SECURITY THREA T MODEL V2V Comm unication Securit y
+5.2 Message T amp ering / Man-in-the-Middle A t-
+tac ks
+Real-Life Analogy
+The In tercepted Letter Analogy: Alice sends Bob a letter through a p ostal
+service. A malicious p ostal w ork er op ens the letter, c hanges the con ten ts (e.g.,
+c hanges the meeting time), reseals it, and forw ards it. Without a signature or
+seal, Bob cannot kno w the letter w as mo died.
+Ho w it w orks in V2V:
+1. A ttac k er in tercepts a BSM b et w een V ehicle A and V ehicle B
+2. A ttac k er mo dies the sp eed eld from 100 km/h to 20 km/h
+3. A ttac k er forw ards the mo died message
+Defence: ECDSA digital signature co v ers the en tire message. An y mo dication 
+ev en one bit  pro duces a dieren t hash, in v alidating the signature. Receiv er detects
+the mismatc h and discards the message.
+5.3 Sybil A ttac ks
+Real-Life Analogy
+The F ak e Cro wd Analogy: Imagine an election where one p erson creates 100
+fak e iden tities and v otes 100 times. A Sybil attac k in V2V is when one attac k er
+broadcasts from man y fak e v ehicle iden tities sim ultaneously to create the illusion
+of a trac jam (causing others to reroute) or to o v erwhelm the net w ork.
+Key Concept
+In a Sybil attac k , a single malicious no de claims m ultiple fak e iden tities. In
+V2V, an attac k er with one radio transmitter could imp ersonate dozens of fak e
+v ehicles, causing:
+ Ghost trac jams: other v ehicles reroute unnecessarily
+ Net w ork o o ding: DoS via message o v erload
+ Map p oisoning: corrupting real-time trac data
+Defence: Eac h v alid iden tit y requires a v alid certicate signed b y the CA. Gen-
+erating man y fak e iden tities requires obtaining man y fak e certicates  whic h
+the CA will not issue. The CA's v erication pro cess is the barrier.
+25 Be ginner's Guide
+
+=== PAGE 28 ===
+CHAPTER 5. V2V SECURITY THREA T MODEL V2V Comm unication Securit y
+5.4 Denial of Service A ttac ks
+Real-Life Analogy
+The Jammed W alkie-T alkie Channel Analogy: If someone holds do wn the
+transmit button on a w alkie-talkie c hannel with static noise, nob o dy else can
+comm unicate. A radio jammer do es the same to DSR C c hannels.
+T yp es of V2V DoS:
+ Ph ysical jamming: radio frequency in terference (hard to prev en t)
+ Proto col o o ding: sending millions of BSMs to o v erwhelm receiv ers
+ Certicate o o ding: triggering exp ensiv e certicate v erication for ev ery fak e
+message
+Defence: Rate limiting p er sender, ligh t w eigh t v erication steps, c hannel manage-
+men t, and misb eha viour detection systems.
+5.5 Ea v esdropping
+Since V2V uses broadcast radio, anyone with the righ t an tenna can receiv e BSMs.
+This enables:
+ Lo cation trac king: observing a v ehicle's mo v emen t o v er time
+ Beha viour proling: deducing driv er habits (comm ute routes, stops)
+Defence: Pseudon ymous certicates + certicate rotation + optional encryption for
+sensitiv e elds.
+26 Be ginner's Guide
+
+=== PAGE 29 ===
+Chapter 6
+Authentication Protocols in V2V
+6.1 What is Mutual Authen tication?
+Real-Life Analogy
+The Secret Handshak e Analogy: T w o spies meeting for the rst time eac h
+need to pro v e they are who they claim to b e. One sp y sho ws a secret sym b ol; the
+other resp onds with the correct coun ter-sym b ol. Both authen ticate eac h other
+sim ultaneously . This is m utual authen tication  b oth parties v erify the other's
+iden tit y b efore trusting them.
+Key Concept
+Mutual Authen tication means b oth parties in a comm unication session v erify
+the other's iden tit y b efore exc hanging sensitiv e data. In V2V:
+ V ehicle A pro v es to V ehicle B that it has a v alid CA-issued certicate and
+the priv ate k ey matc hing that certicate
+ V ehicle B pro v es the same to V ehicle A
+ Neither trusts the other un til b oth pro ofs are v eried
+6.2 Challenge-Resp onse Proto cols
+Key Concept
+A c hallenge-resp onse proto col w orks as follo ws:
+1. Challenge: If y ou really are V ehicle A with priv ate k ey kA , sign this
+random n um b er r for me.
+2. Resp onse: V ehicle A signs r withkA and returns the signature.
+3. V erication: The c hallenger v eries the signature using V ehicle A's public
+k ey (from its certicate). If v alid, iden tit y is pro v en.
+27
+
+=== PAGE 30 ===
+CHAPTER 6. A UTHENTICA TION PR OTOCOLS IN V2V V2V Comm unication Securit y
+This prev en ts imp ersonation b ecause only the true holder of kA can pro duce a
+v alid signature on the c hallenge.
+6.3 Session Keys and F orw ard Secrecy
+Key Concept
+A session k ey is a short-liv ed symmetric k ey used only for the duration of
+one comm unication session. After authen tication, b oth v ehicles deriv e the same
+session k ey using ECDH. This session k ey is then used for fast AES-GCM en-
+cryption.
+F orw ard Secrecy (ac hiev ed with ECDHE) means: ev en if an attac k er later ob-
+tains a v ehicle's long-term priv ate k ey , they cannot decrypt past sessions b ecause
+eac h session used a fresh, ephemeral k ey pair that no longer exists.
+6.4 The Three-W a y Authen tication Handshak e
+Our V2V authen tication proto col follo ws this four-step o w:
+V ehicle A (Initiator) V ehicle B (Resp onder)
+1. HELLO
+CertA + Nonce A + Timestamp
+2. CHALLENGE
+CertB + Nonce B + Sign(Nonce A + Nonce B )
+3. RESPONSE
+Sign(Nonce A + Nonce B ) + ECDH-PubKey A
+4. A CK
+SessionEstablished + ECDH-PubKey BV erify Cert A , c hec k timestam-
+p/nonce
+V erify Cert B , v erify
+signature on Nonce A
+V erify sig, compute shared
+secret
+Compute same
+shared secret
+Figure 6.1: V2V F our-Step Authen tication Handshak e
+28 Be ginner's Guide
+
+=== PAGE 31 ===
+Part II
+Pro ject Architecture and Design
+29
+
+=== PAGE 32 ===
+Chapter 7
+Pro ject Overview and Goals
+7.1 What W e Are Building
+W e are building a Python-based sim ulation of a secure V2V comm unication
+system that demonstrates:
+1. A Certicate Authorit y that issues digital certicates to v ehicles
+2. T w o V ehicle No des that authen ticate eac h other using those certicates
+3. Encrypted BSM exc hange using AES-256-GCM with ECDH session k eys
+4. A Flask dash b oard sho wing authen tication status, messages, and securit y prop-
+erties in real time
+5. A ttac k demonstration scripts sho wing repla y , tamp ering, and MitM attac ks
+b eing detected and blo c k ed
+7.2 Securit y Prop erties A c hiev ed
+T able 7.1: Securit y Prop erties and Ho w W e A c hiev e Them
+Prop ert y Description Mec hanism
+Authen tication Both v ehicles v erify eac h other's
+iden tit yECDSA + X.509 certs
+Conden tialit y Messages encrypted in transit AES-256-GCM
+In tegrit y T amp ering is detected ECDSA signature + HMA C
+Non-repudiation Sender cannot den y sending ECDSA signature
+Repla y Prev en tion Old messages rejected Nonce cac he + timestamps
+F orw ard Secrecy P ast sessions safe if k ey leak ed ECDHE session k eys
+30
+
+=== PAGE 33 ===
+Chapter 8
+T echnical Stack
+8.1 Language: Python 3.x
+Key Concept
+Wh y Python for securit y pro jects?
+ Readable: Securit y logic is clearly visible; bugs are easier to sp ot
+ Ric h ecosystem: PyCA/cryptograph y library is main tained b y securit y
+exp erts and audited b y the comm unit y
+ Rapid protot yping: Build w orking protot yp es quic kly to test design
+ideas
+ Education: The co de reads almost lik e pseudo co de, p erfect for learning
+In pro duction V2V systems, C++ or Rust w ould b e used for p erformance. F or
+our sim ulation, Python is ideal.
+8.2 Cryptographic Libraries
+8.2.1 cryptograph y (PyCA)
+1 p i p i n s t a l l c r y p t o g r a p h y
+2 # T h i s i n s t a l l s t h e P y C A c r y p t o g r a p h y l i b r a r y
+3 # P r o v i d e s : A E S - G C M , E C D S A , E C D H , X . 5 0 9 , H M A C , S H A - 2 5 6
+4 # M a i n t a i n e d b y : P y t h o n C r y p t o g r a p h i c A u t h o r i t y
+5 # A u d i t e d b y : s e c u r i t y p r o f e s s i o n a l s
+6 # U s e d i n : L e t ' s E n c r y p t , T w i s t e d , m a n y p r o d u c t i o n s y s t e m s
+Listing 8.1: Installing PyCA cryptograph y
+8.2.2 PyCrypto dome
+31
+
+=== PAGE 34 ===
+CHAPTER 8. TECHNICAL ST A CK V2V Comm unication Securit y
+1 p i p i n s t a l l p y c r y p t o d o m e
+2 # P y C r y p t o d o m e p r o v i d e s a d d i t i o n a l c i p h e r i m p l e m e n t a t i o n s
+3 # a n d i s a d r o p - i n r e p l a c e m e n t f o r t h e o l d e r P y C r y p t o l i b r a r y .
+4 # W e u s e i t f o r : D E S ( f o r d e m o n s t r a t i o n o f w e a k c i p h e r s ) ,
+5 # a d d i t i o n a l m o d e s , a n d R S A P K C S 1 O A E P p a d d i n g e x a m p l e s .
+Listing 8.2: Installing PyCrypto dome
+8.3 Net w ork La y er
+8.3.1 TCP So c k ets
+Python's built-in socket mo dule pro vides TCP connectivit y . F or our sim ulation, TCP
+giv es us:
+ Reliable, ordered deliv ery (no pac k et loss in sim ulation)
+ Simple serv er/clien t mo del
+ F ull duplex (b oth sides can send sim ultaneously)
+8.3.2 MQTT (Message Queuing T elemetry T ransp ort)
+Real-Life Analogy
+The Publish/Subscrib e (Pub/Sub) Radio Station Analogy: In a tradi-
+tional w alkie-talkie con v ersation, y ou call one p erson. In MQTT, think of radio
+broadcasting: a radio station (publisher) broadcasts on a frequency (topic); an y-
+one with a radio tuned to that frequency (subscrib er) receiv es it. Y ou do not need
+to kno w who is listening  y ou just broadcast. This is the publish/subscrib e
+mo del .
+Key Concept
+MQTT is a ligh t w eigh t messaging proto col designed for IoT devices. Key con-
+cepts:
+ Brok er: The cen tral serv er that routes messages (lik e a radio rela y to w er)
+ Publisher: Sends messages to a topic (V ehicle A publishes its BSMs)
+ Subscrib er: Receiv es messages on a topic (V ehicle B subscrib es to V ehicle
+A's BSM topic)
+ T opic: A string path lik e v2v/vehicle-a/bsm
+ QoS lev els: 0 (re and forget), 1 (at least once), 2 (exactly once)
+W e use Eclipse Mosquitto as our MQTT brok er  free, op en source, and
+widely used.
+32 Be ginner's Guide
+
+=== PAGE 35 ===
+CHAPTER 8. TECHNICAL ST A CK V2V Comm unication Securit y
+8.4 W eb Dash b oard: Flask
+Key Concept
+Flask is a ligh t w eigh t Python w eb framew ork. It lets us create a simple HTTP
+serv er that:
+1. Serv es HTML pages to a bro wser
+2. Pro vides REST API endp oin ts returning JSON data
+3. Connects to our v ehicle no de to query curren t state
+W e use Flask b ecause it requires minimal setup and zero external dep endencies
+b ey ond the library itself.
+33 Be ginner's Guide
+
+=== PAGE 36 ===
+Chapter 9
+Detailed Architecture Diagrams
+9.1 D1  Ov erall System Arc hitecture
+CA Serv er
+Ro ot Key + CerticateNet w ork (TCP/MQTT)
+V ehicle A
+Cert_A + Key_AV ehicle B
+Cert_B + Key_B
+Flask Dash b oardissue cert issue cert auth + BSM auth + BSM
+status status
+Figure 9.1: D1: Ov erall V2V System Arc hitecture
+Mermaid.js Prompt for D1
+T o regenerate D1 in Mermaid.js, paste the follo wing in to https://mermaid.
+live :
+g r a p h T B
+C A [ " C A S e r v e r \ n ( c a . p y ) " ]
+V A [ " V e h i c l e A \ n ( v e h i c l e _ n o d e . p y ) " ]
+V B [ " V e h i c l e B \ n ( v e h i c l e _ n o d e . p y ) " ]
+N E T [ " N e t w o r k \ n ( T C P / M Q T T ) " ]
+F L A S K [ " F l a s k D a s h b o a r d \ n ( a p p . p y ) " ]
+34
+
+=== PAGE 37 ===
+CHAPTER 9. DET AILED AR CHITECTURE DIA GRAMS V2V Comm unication Securit y
+C A - - > | " i s s u e c e r t " | V A
+C A - - > | " i s s u e c e r t " | V B
+V A < - - > | " a u t h + B S M " | N E T
+V B < - - > | " a u t h + B S M " | N E T
+V A - - > | " s t a t u s " | F L A S K
+V B - - > | " s t a t u s " | F L A S K
+9.2 D2  Authen tication Handshak e Sequence
+(See Figure 6.1 in Chapter 6 for the TikZ rendering.)
+Mermaid.js Prompt for D2
+s e q u e n c e D i a g r a m
+p a r t i c i p a n t A a s V e h i c l e A
+p a r t i c i p a n t B a s V e h i c l e B
+A - > > B : 1 . H E L L O { C e r t _ A , N o n c e _ A , T i m e s t a m p }
+N o t e o v e r B : V e r i f y C e r t _ A , c h e c k t i m e s t a m p
+B - > > A : 2 . C H A L L E N G E { C e r t _ B , N o n c e _ B , S i g n ( N o n c e _ A | N o n c e _ B ) }
+N o t e o v e r A : V e r i f y C e r t _ B , v e r i f y s i g n a t u r e o n N o n c e _ A
+A - > > B : 3 . R E S P O N S E { S i g n ( N o n c e _ A | N o n c e _ B ) , E C D H _ P u b K e y _ A }
+N o t e o v e r B : V e r i f y s i g n a t u r e , c o m p u t e s h a r e d s e c r e t
+B - > > A : 4 . A C K { S e s s i o n E s t a b l i s h e d , E C D H _ P u b K e y _ B }
+N o t e o v e r A : C o m p u t e s h a r e d s e c r e t - > S e s s i o n K e y
+35 Be ginner's Guide
+
+=== PAGE 38 ===
+CHAPTER 9. DET AILED AR CHITECTURE DIA GRAMS V2V Comm unication Securit y
+9.3 D3  Cryptographic Message Structure
+Plain text BSM: {v ehicle_id, sp eed, heading, lat, lon, timestamp, seq}
+SHA-256 Hash of BSM con ten t
+ECDSA Signature = Sign(hash, priv ate_k ey_A)
+HMA C-SHA256 = HMA C(session_k ey , BSM + Signature)
+AES-256-GCM Encrypt(session_k ey , BSM + Sig + HMA C)
+T ransmitted P ac k et: [Nonce | Ciphertext | Auth-T ag | Seq-Num]La y er 1: P a yload
+La y er 2: Hash
+La y er 3: Sign
+La y er 4: MA C
+La y er 5: Encrypt
+La y er 6: T ransmit
+Figure 9.2: D3: Cryptographic La y ering of a V2V BSM (Sign-then-Encrypt)
+9.4 D4  Threat Mo del Diagram
+V ehicle A V ehicle BSecure Channel
+Repla y A ttac k erMitM A ttac k er
+Sybil A ttac k er DoS A ttac k erold message
+Nonce + TimestampCert V erication
+CA-issued Certs Rate Limiting
+Figure 9.3: D4: Threat Mo del  A ttac k V ectors and Defences
+9.5 D5  PKI Certicate Chain
+(See Figure 4.1 in Chapter 4.)
+36 Be ginner's Guide
+
+=== PAGE 39 ===
+CHAPTER 9. DET AILED AR CHITECTURE DIA GRAMS V2V Comm unication Securit y
+9.6 D6  MQTT T opic Structure
+T able 9.1: D6: MQTT T opic Structure
+T opic Purp ose Publisher Subscrib er
+v2v/vehicle-a/bsm BSMs from V ehicle A V ehicle A V ehicle B, Dash b oard
+v2v/vehicle-b/bsm BSMs from V ehicle B V ehicle B V ehicle A, Dash b oard
+v2v/vehicle-a/auth Auth messages V ehicle A V ehicle B
+v2v/vehicle-b/auth Auth messages V ehicle B V ehicle A
+v2v/alerts A ttac k alerts An y no de Dash b oard
+v2v/+/bsm All BSMs (wildcard)  Monitor to ols
+9.7 D7  Flask Dash b oard Wireframe
+V2V Securit y Dash b oard  V ehicle A
+Certicate Status
+V ALID  Expires 2025-01-01
+CN: V ehicle-A-001
+Issuer: V2V-Ro ot-CAAuth Status
+A UTHENTICA TED  V ehicle-B
+Session Key: A ctiv e (ECDHE)
+F orw ard Secrecy: EnabledSecurit y Alerts
+No alerts detected
+Recen t Messages (Last 20)
+Time Sp eed Heading Auth Enc In t Rpl
+12:34.1*10-40 72 km/h 045◦
+12:33.7*10-40 72 km/h 045◦
+12:33.3*10-40 72 km/h 045◦
+12:32.9*10-40 72 km/h 045◦
+12:32.5*10-40 72 km/h 045◦
+12:32.1*10-40 72 km/h 045◦
+12:31.7*10-40 72 km/h 045◦
+Auto-refreshes ev ery 3 seconds  V ehicle No de: lo calhost:5000
+Figure 9.4: D7: Flask Dash b oard Wireframe
+37 Be ginner's Guide
+
+=== PAGE 40 ===
+CHAPTER 9. DET AILED AR CHITECTURE DIA GRAMS V2V Comm unication Securit y
+9.8 D8  Do c k er Net w ork T op ology
+Do cker Bridge Network: v2v-net
+ca-serv er (8443) v ehicle-a (9001) v ehicle-b (9002)
+mosquitto (P ort 1883)ask-dash (5000)certs
+Figure 9.5: D8: Do c k er Con tainer Net w ork T op ology
+9.9 Pro ject F older Structure
+v 2 v _ s e c u r i t y /
+| - - c a / # C e r t i f i c a t e A u t h o r i t y m o d u l e
+| | - - c a . p y # R o o t C A : g e n e r a t e s k e y p a i r + s e l f -
+s i g n e d c e r t
+| | - - i s s u e _ c e r t . p y # I s s u e s s i g n e d c e r t i f i c a t e s t o v e h i c l e s
+| | - - v e r i f y _ c e r t . p y # V e r i f i e s c e r t i f i c a t e a u t h e n t i c i t y
+| | - - c e r t s / # G e n e r a t e d c e r t i f i c a t e s ( P E M f i l e s )
+| | | - - c a _ c e r t . p e m # C A r o o t c e r t i f i c a t e ( s h a r e w i t h a l l )
+| | | - - c a _ k e y . p e m # C A p r i v a t e k e y ( k e e p S E C R E T )
+| | | - - v e h i c l e _ a _ c e r t . p e m
+| | | - - v e h i c l e _ a _ k e y . p e m
+| | | - - v e h i c l e _ b _ c e r t . p e m
+| | ` - - v e h i c l e _ b _ k e y . p e m
+|
+| - - c r y p t o / # C r y p t o g r a p h i c o p e r a t i o n s m o d u l e
+| ` - - c r y p t o . p y # A E S - G C M , E C D H , E C D S A , H M A C , k e y
+d e r i v a t i o n
+|
+| - - p r o t o c o l / # C o m m u n i c a t i o n p r o t o c o l l a y e r
+| | - - a u t h _ p r o t o c o l . p y # H a n d s h a k e : H E L L O / C H A L L E N G E / R E S P O N S E /
+A C K
+| ` - - v 2 v _ p r o t o c o l . p y # B S M : c r e a t e , s e c u r e , s e n d , r e c e i v e ,
+v e r i f y
+|
+| - - n o d e / # V e h i c l e n o d e i m p l e m e n t a t i o n
+38 Be ginner's Guide
+
+=== PAGE 41 ===
+CHAPTER 9. DET AILED AR CHITECTURE DIA GRAMS V2V Comm unication Securit y
+| ` - - v e h i c l e _ n o d e . p y # M a i n v e h i c l e c l a s s : T C P s e r v e r + B S M
+l o o p
+|
+| - - d a s h b o a r d / # F l a s k w e b d a s h b o a r d
+| | - - a p p . p y # F l a s k a p p : R E S T A P I + d a s h b o a r d s e r v e r
+| ` - - t e m p l a t e s /
+| ` - - d a s h b o a r d . h t m l # H T M L d a s h b o a r d p a g e
+|
+| - - a t t a c k s / # A t t a c k d e m o n s t r a t i o n s c r i p t s
+| | - - r e p l a y _ a t t a c k . p y # C a p t u r e s B S M a n d r e p l a y s i t ( s h o w s
+r e j e c t i o n )
+| | - - t a m p e r _ a t t a c k . p y # M o d i f i e s B S M i n t r a n s i t ( s h o w s s i g
+f a i l u r e )
+| ` - - m i t m _ a t t a c k . p y # M a n - i n - t h e - m i d d l e r e l a y ( s h o w s c e r t
+f a i l u r e )
+|
+| - - t e s t s / # T e s t s u i t e
+| | - - t e s t _ c r y p t o . p y # U n i t t e s t s f o r a l l c r y p t o f u n c t i o n s
+| | - - t e s t _ a u t h . p y # I n t e g r a t i o n t e s t s f o r h a n d s h a k e
+| ` - - t e s t _ v 2 v . p y # E n d - t o - e n d m e s s a g e t e s t s
+|
+| - - d o c k e r / # D o c k e r c o n f i g u r a t i o n
+| | - - D o c k e r f i l e # I m a g e d e f i n i t i o n f o r v e h i c l e n o d e s
+| ` - - d o c k e r - c o m p o s e . y m l # M u l t i - c o n t a i n e r o r c h e s t r a t i o n
+|
+| - - r e q u i r e m e n t s . t x t # A l l P y t h o n d e p e n d e n c i e s w i t h v e r s i o n s
+| - - R E A D M E . m d # P r o j e c t o v e r v i e w a n d q u i c k - s t a r t g u i d e
+` - - c o n f i g . p y # S h a r e d c o n f i g u r a t i o n c o n s t a n t s
+Listing 9.1: Complete Pro ject Directory T ree
+39 Be ginner's Guide
+
+=== PAGE 42 ===
+Part III
+Complete Pro ject Implementation
+Guide
+40
+
+=== PAGE 43 ===
+Chapter 10
+Step 1  Environment Setup
+10.1 Theory: Wh y Virtual En vironmen ts?
+Key Concept
+A virtual en vironmen t is an isolated Python installation that has its o wn set
+of pac k ages, separate from y our system Python. This prev en ts v ersion conicts
+b et w een pro jects and ensures y our pro ject's dep endencies are fully repro ducible.
+Think of it as giving y our pro ject its o wn clean w orkb enc h.
+10.2 Setup Commands
+# 1 . C r e a t e p r o j e c t d i r e c t o r y
+m k d i r v 2 v _ s e c u r i t y & & c d v 2 v _ s e c u r i t y
+# 2 . C r e a t e v i r t u a l e n v i r o n m e n t
+p y t h o n 3 - m v e n v v e n v
+# 3 . A c t i v a t e i t
+s o u r c e v e n v / b i n / a c t i v a t e # L i n u x / m a c O S
+# . \ v e n v \ S c r i p t s \ a c t i v a t e # W i n d o w s P o w e r S h e l l
+# 4 . V e r i f y a c t i v a t i o n ( s h o u l d s h o w v e n v p a t h )
+w h i c h p y t h o n 3
+# 5 . I n s t a l l a l l d e p e n d e n c i e s
+p i p i n s t a l l c r y p t o g r a p h y p y c r y p t o d o m e p a h o - m q t t f l a s k r e q u e s t s p y t e s t
+Listing 10.1: En vironmen t setup  Lin ux/macOS
+41
+
+=== PAGE 44 ===
+CHAPTER 10. STEP 1  ENVIR ONMENT SETUP V2V Comm unication Securit y
+10.3 requiremen ts.txt
+1 # r e q u i r e m e n t s . t x t
+2 # I n s t a l l a l l w i t h : p i p i n s t a l l - r r e q u i r e m e n t s . t x t
+3
+4 c r y p t o g r a p h y = = 4 2 . 0 . 5 # P y C A : A E S - G C M , E C D S A , E C D H , X . 5 0 9 , H M A C ,
+S H A - 2 5 6
+5 p y c r y p t o d o m e = = 3 . 2 0 . 0 # E x t r a c i p h e r i m p l e m e n t a t i o n s , l e g a c y
+s u p p o r t
+6 p a h o - m q t t = = 1 . 6 . 1 # M Q T T c l i e n t : p u b l i s h / s u b s c r i b e t o
+M o s q u i t t o b r o k e r
+7 f l a s k = = 3 . 0 . 3 # L i g h t w e i g h t w e b f r a m e w o r k f o r t h e
+d a s h b o a r d
+8 r e q u e s t s = = 2 . 3 1 . 0 # H T T P c l i e n t : d a s h b o a r d p o l l s v e h i c l e
+n o d e R E S T A P I
+9 p y t e s t = = 8 . 1 . 1 # T e s t r u n n e r f o r u n i t a n d i n t e g r a t i o n
+t e s t s
+10 p y t e s t - c o v = = 4 . 1 . 0 # T e s t c o v e r a g e r e p o r t i n g
+11 p y t h o n - d a t e u t i l = = 2 . 9 . 0 # T i m e s t a m p p a r s i n g a n d t i m e z o n e h a n d l i n g
+12 d a t a c l a s s e s - j s o n = = 0 . 6 . 4 # J S O N s e r i a l i z a t i o n f o r B S M d a t a c l a s s
+Listing 10.2: requiremen ts.txt with explanations
+10.4 T w o-V ehicle Conguration on One Mac hine
+# V e h i c l e A l i s t e n s o n p o r t 9 0 0 1 , V e h i c l e B o n p o r t 9 0 0 2
+# R u n i n s e p a r a t e t e r m i n a l s :
+# T e r m i n a l 1 - - - V e h i c l e A
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - a \
+- - p o r t 9 0 0 1 \
+- - p e e r - h o s t 1 2 7 . 0 . 0 . 1 \
+- - p e e r - p o r t 9 0 0 2 \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m
+# T e r m i n a l 2 - - - V e h i c l e B
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - b \
+- - p o r t 9 0 0 2 \
+- - p e e r - h o s t 1 2 7 . 0 . 0 . 1 \
+- - p e e r - p o r t 9 0 0 1 \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m
+Listing 10.3: Single-mac hine t w o-v ehicle setup
+42 Be ginner's Guide
+
+=== PAGE 45 ===
+CHAPTER 10. STEP 1  ENVIR ONMENT SETUP V2V Comm unication Securit y
+10.5 T w o-Laptop Setup
+# S t e p 1 : F i n d L a p t o p A ' s I P a d d r e s s
+i p a d d r s h o w # L i n u x
+i p c o n f i g # W i n d o w s
+# S u p p o s e L a p t o p A h a s I P : 1 9 2 . 1 6 8 . 1 . 1 0 0
+# S u p p o s e L a p t o p B h a s I P : 1 9 2 . 1 6 8 . 1 . 1 0 1
+# S t e p 2 : O p e n f i r e w a l l p o r t o n b o t h l a p t o p s ( L i n u x )
+s u d o u f w a l l o w 9 0 0 1 / t c p
+s u d o u f w a l l o w 9 0 0 2 / t c p
+s u d o u f w a l l o w 5 0 0 0 / t c p # F l a s k d a s h b o a r d
+# S t e p 3 : C o p y c e r t i f i c a t e s t o L a p t o p B ( v i a s c p o r U S B )
+s c p c a / c e r t s / c a _ c e r t . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y / c a / c e r t s /
+s c p c a / c e r t s / v e h i c l e _ b _ c e r t . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y / c a /
+c e r t s /
+s c p c a / c e r t s / v e h i c l e _ b _ k e y . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y / c a /
+c e r t s /
+# S t e p 4 : L a p t o p A - - - R u n V e h i c l e A
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - a \
+- - p o r t 9 0 0 1 \
+- - p e e r - h o s t 1 9 2 . 1 6 8 . 1 . 1 0 1 \ # L a p t o p B ' s I P
+- - p e e r - p o r t 9 0 0 2 \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m
+# S t e p 5 : L a p t o p B - - - R u n V e h i c l e B
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - b \
+- - p o r t 9 0 0 2 \
+- - p e e r - h o s t 1 9 2 . 1 6 8 . 1 . 1 0 0 \ # L a p t o p A ' s I P
+- - p e e r - p o r t 9 0 0 1 \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m
+Listing 10.4: T w o-laptop net w ork setup
+43 Be ginner's Guide
+
+=== PAGE 46 ===
+Chapter 11
+Step 2  Certicate Authority
+Implementation
+11.1 Theory: What the CA Do es
+The CA is the trust anc hor of the en tire system. It generates the ro ot k ey pair and
+certicate, then issues signed certicates to v ehicles. An y v ehicle that trusts the CA
+automatically trusts ev ery certicate the CA has signed.
+Key Concept
+CA Bo otstrap Pro cess:
+1. CA generates its o wn ECDSA k ey pair (priv ate + public)
+2. CA creates a self-signed certicate (it signs its o wn certicate with its o wn
+priv ate k ey  the ro ot of trust)
+3. When a v ehicle requests a certicate, the CA v eries the v ehicle's iden tit y
+and signs the v ehicle's certicate with the CA's priv ate k ey
+4. V ehicles v erify eac h other's certicates b y c hec king the CA's signature using
+the CA's public k ey (from the CA certicate)
+11.2 Small Co de Segmen t: Key Generation
+1 f r o m c r y p t o g r a p h y . h a z m a t . p r i m i t i v e s . a s y m m e t r i c . e c i m p o r t (
+2 g e n e r a t e _ p r i v a t e _ k e y , # F u n c t i o n t o c r e a t e a n e w E C k e y p a i r
+3 S E C P 2 5 6 R 1 # T h e P - 2 5 6 c u r v e ( N I S T s t a n d a r d , u s e d
+i n V 2 V )
+4 )
+5 f r o m c r y p t o g r a p h y . h a z m a t . b a c k e n d s i m p o r t d e f a u l t _ b a c k e n d
+6
+7 # G e n e r a t e t h e C A ' s p r i v a t e k e y o n t h e P - 2 5 6 e l l i p t i c c u r v e
+44
+
+=== PAGE 47 ===
+CHAPTER 11. STEP 2  CER TIFICA TE A UTHORITY IMPLEMENT A TION V2V Comm unication Securit y
+8 # S E C P 2 5 6 R 1 = " S E C ( S t a n d a r d s f o r E f f i c i e n t C r y p t o g r a p h y ) P - 2 5 6 R 1 "
+9 # T h i s i s t h e s a m e c u r v e u s e d i n H T T P S a n d I E E E 1 6 0 9 . 2
+10 c a _ p r i v a t e _ k e y = g e n e r a t e _ p r i v a t e _ k e y (
+11 c u r v e = S E C P 2 5 6 R 1 ( ) , # S p e c i f i e s w h i c h c u r v e t o u s e
+12 b a c k e n d = d e f a u l t _ b a c k e n d ( ) # U s e s t h e p l a t f o r m ' s c r y p t o g r a p h i c
+b a c k e n d
+13 )
+14
+15 # D e r i v e t h e p u b l i c k e y f r o m t h e p r i v a t e k e y
+16 # P u b l i c k e y s c a n b e f r e e l y s h a r e d ; n e v e r s h a r e t h e p r i v a t e k e y
+17 c a _ p u b l i c _ k e y = c a _ p r i v a t e _ k e y . p u b l i c _ k e y ( )
+18
+19 # A t t h i s p o i n t w e h a v e a k e y P A I R :
+20 # c a _ p r i v a t e _ k e y - - > k e p t s e c r e t b y C A , u s e d t o S I G N c e r t i f i c a t e s
+21 # c a _ p u b l i c _ k e y - - > s h a r e d w i t h a l l v e h i c l e s , u s e d t o V E R I F Y
+s i g n a t u r e s
+Listing 11.1: CA k ey generation  annotated snipp et
+11.3 F ull Claude Co de Prompt for Step 2
+Claude Co de Prompt  CA Mo dule
+Y o u a r e a n e x p e r t P y t h o n s e c u r i t y e n g i n e e r . C r e a t e t h r e e
+p r o d u c t i o n - r e a d y P y t h o n
+m o d u l e s f o r a V e h i c l e - t o - V e h i c l e ( V 2 V ) s e c u r i t y s i m u l a t i o n ' s
+C e r t i f i c a t e A u t h o r i t y .
+R E Q U I R E M E N T S :
+1 . c a . p y - C e r t i f i c a t e A u t h o r i t y :
+- G e n e r a t e E C D S A P - 2 5 6 ( S E C P 2 5 6 R 1 ) k e y p a i r f o r t h e C A
+- C r e a t e a s e l f - s i g n e d X . 5 0 9 v 3 r o o t c e r t i f i c a t e w i t h :
+* S u b j e c t : C N = V 2 V - R o o t - C A , O = V 2 V - S e c u r i t y - L a b
+* V a l i d i t y : 1 0 y e a r s f r o m n o w
+* K e y u s a g e : C e r t i f i c a t e S i g n , C R L S i g n
+* B a s i c c o n s t r a i n t s : C A = T r u e , p a t h L e n = 1
+- S a v e c a _ k e y . p e m ( p r i v a t e , P E M , e n c r y p t e d w i t h p a s s p h r a s e )
+a n d c a _ c e r t . p e m ( p u b l i c , P E M )
+- P r i n t c e r t i f i c a t e d e t a i l s i n h u m a n - r e a d a b l e f o r m t o s t d o u t
+- E v e r y f u n c t i o n m u s t h a v e a f u l l d o c s t r i n g w i t h A r g s / R e t u r n s
+/ R a i s e s
+2 . i s s u e _ c e r t . p y - V e h i c l e C e r t i f i c a t e I s s u e r :
+- A c c e p t C L I a r g s : - - v e h i c l e - i d , - - o u t p u t - d i r
+- G e n e r a t e E C D S A P - 2 5 6 k e y p a i r f o r t h e v e h i c l e
+45 Be ginner's Guide
+
+=== PAGE 48 ===
+CHAPTER 11. STEP 2  CER TIFICA TE A UTHORITY IMPLEMENT A TION V2V Comm unication Securit y
+- C r e a t e C e r t i f i c a t e S i g n i n g R e q u e s t ( C S R ) f o r t h e v e h i c l e
+- S i g n t h e C S R w i t h t h e C A k e y t o p r o d u c e a v e h i c l e
+c e r t i f i c a t e :
+* S u b j e c t : C N = { v e h i c l e - i d } , O = V 2 V - S e c u r i t y - L a b
+* V a l i d i t y : 1 y e a r f r o m n o w
+* K e y u s a g e : D i g i t a l S i g n a t u r e
+* E x t e n d e d K e y u s a g e : c l i e n t A u t h
+* S A N : D N S : { v e h i c l e - i d }
+- S a v e { v e h i c l e _ i d } _ c e r t . p e m a n d { v e h i c l e _ i d } _ k e y . p e m
+- D i s p l a y c e r t i f i c a t e f i n g e r p r i n t a n d s e r i a l n u m b e r
+3 . v e r i f y _ c e r t . p y - C e r t i f i c a t e V e r i f i e r :
+- A c c e p t C L I a r g s : - - c e r t ( p a t h t o c e r t t o v e r i f y ) , - - c a - c e r t
+- V e r i f y t h e c e r t i f i c a t e ' s s i g n a t u r e a g a i n s t t h e C A
+c e r t i f i c a t e
+- C h e c k v a l i d i t y d a t e s ( n o t b e f o r e / n o t a f t e r )
+- D i s p l a y : V A L I D / I N V A L I D , e x p i r y d a t e , s u b j e c t , i s s u e r , k e y
+t y p e
+U s e O N L Y t h e ' c r y p t o g r a p h y ' ( P y C A ) l i b r a r y .
+U s e P y t h o n 3 . 1 0 + t y p e h i n t s t h r o u g h o u t .
+I n c l u d e t r y / e x c e p t w i t h s p e c i f i c e x c e p t i o n t y p e s f r o m
+c r y p t o g r a p h y . e x c e p t i o n s .
+A d d l o g g i n g w i t h t i m e s t a m p s u s i n g t h e l o g g i n g m o d u l e .
+I n c l u d e a _ _ m a i n _ _ b l o c k w i t h u s a g e e x a m p l e s .
+A f t e r e a c h f i l e , s h o w t h e e x p e c t e d t e r m i n a l o u t p u t .
+11.4 Exp ected Output
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : G e n e r a t i n g C A k e y p a i r ( E C D S A P - 2 5 6 ) . . .
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : C A k e y p a i r g e n e r a t e d s u c c e s s f u l l y .
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : C r e a t i n g s e l f - s i g n e d r o o t c e r t i f i c a t e . . .
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : C e r t i f i c a t e c r e a t e d . D e t a i l s :
+S u b j e c t : C N = V 2 V - R o o t - C A , O = V 2 V - S e c u r i t y - L a b
+I s s u e r : C N = V 2 V - R o o t - C A , O = V 2 V - S e c u r i t y - L a b ( s e l f - s i g n e d )
+S e r i a l : 0 x 3 A 7 B 2 C 1 D 4 E 5 F 6 A 0 B
+V a l i d f r o m : 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 U T C
+V a l i d t o : 2 0 3 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 U T C
+K e y t y p e : E C D S A P - 2 5 6
+S i g n a t u r e : S H A 2 5 6 w i t h E C D S A
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : S a v e d : c a / c e r t s / c a _ c e r t . p e m
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] I N F O : S a v e d : c a / c e r t s / c a _ k e y . p e m ( E N C R Y P T E D )
+[ 2 0 2 4 - 0 1 - 1 5 1 0 : 2 3 : 0 1 ] S U C C E S S : C A i n i t i a l i s e d . S h a r e c a _ c e r t . p e m w i t h a l l v e h i c l e s .
+Listing 11.2: Exp ected output from ca.p y
+46 Be ginner's Guide
+
+=== PAGE 49 ===
+Chapter 12
+Step 3  Cryptographic Module
+12.1 Theory: Wh y AES-GCM + ECDH + ECDSA
+T ogether?
+These three algorithms co v er distinct securit y needs:
+T able 12.1: Cryptographic Algorithm Selection Rationale
+Algorithm T yp e Wh y c hosen Standard
+AES-256-GCM Sym. Encryption AEAD: encrypts AND
+authen ticates; hardw are
+acceleratedNIST FIPS 197
+ECDH P-256 Key Exc hange Small k eys; fast; pro vides
+forw ard secrecyNIST SP 800-56A
+ECDSA P-256 Digital Sig Non-repudiation; small
+signatures; fastFIPS 186-4
+HMA C-SHA256 MA C F ast message authen tica-
+tion for BSM in tegrit yFIPS 198-1
+SHA-256 Hash Standard; collision resis-
+tan t; fastFIPS 180-4
+12.2 Small Co de Segmen t: AES-GCM Encrypt/De-
+crypt
+1 i m p o r t o s
+2 f r o m c r y p t o g r a p h y . h a z m a t . p r i m i t i v e s . c i p h e r s . a e a d i m p o r t A E S G C M
+3
+47
+
+=== PAGE 50 ===
+CHAPTER 12. STEP 3  CR YPTOGRAPHIC MODULE V2V Comm unication Securit y
+4 d e f a e s _ g c m _ e n c r y p t ( k e y : b y t e s , p l a i n t e x t : b y t e s ) - > t u p l e [ b y t e s ,
+b y t e s , b y t e s ] :
+5 " " " E n c r y p t p l a i n t e x t w i t h A E S - 2 5 6 - G C M .
+6
+7 A r g s :
+8 k e y : 3 2 - b y t e ( 2 5 6 - b i t ) s y m m e t r i c k e y
+9 p l a i n t e x t : A n y b y t e s t o e n c r y p t
+10
+11 R e t u r n s :
+12 T u p l e o f ( c i p h e r t e x t , n o n c e , t a g )
+13 - c i p h e r t e x t : e n c r y p t e d d a t a ( s a m e l e n g t h a s p l a i n t e x t )
+14 - n o n c e : 1 2 - b y t e r a n d o m v a l u e ( M U S T b e u n i q u e p e r k e y )
+15 - t a g : 1 6 - b y t e a u t h e n t i c a t i o n t a g ( v e r i f i e s i n t e g r i t y )
+16 " " "
+17 # G e n e r a t e a c r y p t o g r a p h i c a l l y r a n d o m 9 6 - b i t ( 1 2 - b y t e ) n o n c e
+18 # o s . u r a n d o m ( ) u s e s t h e O S ' s C S P R N G ( e . g . , / d e v / u r a n d o m o n
+L i n u x )
+19 # N E V E R r e u s e a n o n c e w i t h t h e s a m e k e y - - - c a t a s t r o p h i c i f y o u
+d o !
+20 n o n c e = o s . u r a n d o m ( 1 2 )
+21
+22 # C r e a t e a n A E S G C M c i p h e r o b j e c t w i t h o u r 2 5 6 - b i t k e y
+23 # A E S G C M a u t o m a t i c a l l y v a l i d a t e s k e y l e n g t h ( m u s t b e 1 6 , 2 4 , o r
+3 2 b y t e s )
+24 a e s g c m = A E S G C M ( k e y )
+25
+26 # E n c r y p t : r e t u r n s c i p h e r t e x t W I T H t h e 1 6 - b y t e a u t h t a g
+a p p e n d e d
+27 # T h e t a g i s t h e l a s t 1 6 b y t e s o f t h e r e t u r n e d v a l u e
+28 e n c r y p t e d = a e s g c m . e n c r y p t (
+29 n o n c e = n o n c e , # U n i q u e p e r m e s s a g e
+30 d a t a = p l a i n t e x t , # D a t a t o e n c r y p t
+31 a a d = N o n e # A d d i t i o n a l A u t h e n t i c a t e d D a t a ( n o t
+e n c r y p t e d
+32 ) # b u t i n t e g r i t y - p r o t e c t e d ) ; N o n e h e r e
+33
+34 # S p l i t t h e r e s u l t : c i p h e r t e x t i s e v e r y t h i n g e x c e p t l a s t 1 6
+b y t e s
+35 c i p h e r t e x t = e n c r y p t e d [ : - 1 6 ]
+36 t a g = e n c r y p t e d [ - 1 6 : ] # 1 6 - b y t e G a l o i s / C o u n t e r M o d e a u t h
+t a g
+37
+38 r e t u r n c i p h e r t e x t , n o n c e , t a g
+Listing 12.1: AES-256-GCM encrypt/decrypt  annotated
+48 Be ginner's Guide
+
+=== PAGE 51 ===
+CHAPTER 12. STEP 3  CR YPTOGRAPHIC MODULE V2V Comm unication Securit y
+12.3 F ull Claude Co de Prompt for Step 3
+Claude Co de Prompt  crypto.p y
+C r e a t e a p r o d u c t i o n - r e a d y P y t h o n m o d u l e ' c r y p t o . p y ' f o r V 2 V
+c o m m u n i c a t i o n s e c u r i t y .
+I M P L E M E N T t h e s e e x a c t f u n c t i o n s w i t h f u l l d o c s t r i n g s , t y p e h i n t s
+, a n d e r r o r h a n d l i n g :
+1 . a e s _ g c m _ e n c r y p t ( k e y : b y t e s , p l a i n t e x t : b y t e s ,
+a a d : b y t e s | N o n e = N o n e ) - > t u p l e [ b y t e s ,
+b y t e s , b y t e s ]
+R e t u r n s : ( c i p h e r t e x t , n o n c e , t a g )
+- U s e A E S G C M f r o m c r y p t o g r a p h y . h a z m a t . p r i m i t i v e s . c i p h e r s . a e a d
+- G e n e r a t e n o n c e w i t h o s . u r a n d o m ( 1 2 )
+- V a l i d a t e k e y i s e x a c t l y 3 2 b y t e s ; r a i s e V a l u e E r r o r
+o t h e r w i s e
+2 . a e s _ g c m _ d e c r y p t ( k e y : b y t e s , c i p h e r t e x t : b y t e s , n o n c e : b y t e s ,
+t a g : b y t e s , a a d : b y t e s | N o n e = N o n e ) - >
+b y t e s
+- R e a s s e m b l e c i p h e r t e x t + t a g a n d c a l l A E S G C M . d e c r y p t ( )
+- C a t c h I n v a l i d T a g e x c e p t i o n a n d r a i s e a c u s t o m
+D e c r y p t i o n E r r o r
+- R e t u r n p l a i n t e x t b y t e s
+3 . e c d h _ k e y _ e x c h a n g e ( p r i v a t e _ k e y : E l l i p t i c C u r v e P r i v a t e K e y ,
+p e e r _ p u b l i c _ k e y : E l l i p t i c C u r v e P u b l i c K e y ) - >
+b y t e s
+- U s e E C D H f r o m c r y p t o g r a p h y . h a z m a t . p r i m i t i v e s . a s y m m e t r i c . e c
+- R e t u r n s r a w s h a r e d s e c r e t b y t e s ( 3 2 b y t e s f o r P - 2 5 6 )
+4 . e c d s a _ s i g n ( p r i v a t e _ k e y : E l l i p t i c C u r v e P r i v a t e K e y ,
+m e s s a g e : b y t e s ) - > b y t e s
+- H a s h m e s s a g e w i t h S H A - 2 5 6 ( u s e P r e h a s h e d o r h a s h - t h e n - s i g n
+p a t t e r n )
+- U s e E C D S A w i t h S H A 2 5 6 f r o m c r y p t o g r a p h y
+- R e t u r n D E R - e n c o d e d s i g n a t u r e b y t e s
+5 . e c d s a _ v e r i f y ( p u b l i c _ k e y : E l l i p t i c C u r v e P u b l i c K e y ,
+m e s s a g e : b y t e s , s i g n a t u r e : b y t e s ) - > b o o l
+- V e r i f y D E R s i g n a t u r e ; r e t u r n F a l s e ( d o N O T r a i s e ) o n
+i n v a l i d
+6 . h m a c _ c o m p u t e ( k e y : b y t e s , m e s s a g e : b y t e s ) - > b y t e s
+49 Be ginner's Guide
+
+=== PAGE 52 ===
+CHAPTER 12. STEP 3  CR YPTOGRAPHIC MODULE V2V Comm unication Securit y
+- U s e H M A C w i t h S H A - 2 5 6 f r o m c r y p t o g r a p h y . h a z m a t . p r i m i t i v e s .
+h m a c
+- R e t u r n 3 2 - b y t e H M A C d i g e s t
+7 . h m a c _ v e r i f y ( k e y : b y t e s , m e s s a g e : b y t e s , e x p e c t e d _ h m a c : b y t e s )
+- > b o o l
+- U s e h m a c . c o m p a r e _ d i g e s t ( ) f o r c o n s t a n t - t i m e c o m p a r i s o n
+- R e t u r n b o o l
+8 . d e r i v e _ s e s s i o n _ k e y ( s h a r e d _ s e c r e t : b y t e s ,
+n o n c e _ a : b y t e s , n o n c e _ b : b y t e s ) - > b y t e s
+- U s e H K D F w i t h S H A - 2 5 6
+- i n f o = b " v 2 v - s e s s i o n - k e y - v 1 "
+- s a l t = n o n c e _ a + n o n c e _ b
+- R e t u r n 3 2 - b y t e d e r i v e d k e y
+9 . g e n e r a t e _ e c d h _ k e y p a i r ( ) - > t u p l e [ E l l i p t i c C u r v e P r i v a t e K e y ,
+E l l i p t i c C u r v e P u b l i c K e y ]
+- G e n e r a t e f r e s h e p h e m e r a l P - 2 5 6 k e y p a i r f o r E C D H E
+1 0 . s e r i a l i z e _ p u b l i c _ k e y ( p u b _ k e y ) - > b y t e s
+s e r i a l i z e _ p r i v a t e _ k e y ( p r i v _ k e y , p a s s w o r d : b y t e s | N o n e =
+N o n e ) - > b y t e s
+l o a d _ p u b l i c _ k e y ( d a t a : b y t e s ) - > E l l i p t i c C u r v e P u b l i c K e y
+l o a d _ p r i v a t e _ k e y ( d a t a : b y t e s , p a s s w o r d : b y t e s | N o n e = N o n e )
+D e f i n e c u s t o m e x c e p t i o n s : C r y p t o E r r o r , D e c r y p t i o n E r r o r ,
+S i g n a t u r e E r r o r .
+A d d a d e m o n s t r a t i o n _ _ m a i n _ _ b l o c k t h a t :
+- G e n e r a t e s t w o k e y p a i r s ( A l i c e a n d B o b )
+- P e r f o r m s E C D H a n d d e r i v e s s e s s i o n k e y
+- E n c r y p t s a t e s t m e s s a g e f r o m A l i c e , d e c r y p t s a t B o b ' s s i d e
+- S i g n s a m e s s a g e , v e r i f i e s s i g n a t u r e
+- S h o w s H M A C c o m p u t e a n d v e r i f y
+- P r i n t s S U C C E S S o r F A I L U R E f o r e a c h s t e p w i t h t i m i n g i n m s
+50 Be ginner's Guide
+
+=== PAGE 53 ===
+Chapter 13
+Step 4  Authentication Protocol
+13.1 Theory: The Handshak e in Detail
+The four-step handshak e (see Figure 6.1) ac hiev es the follo wing securit y goals:
+1. Step 1 (HELLO): V ehicle A announces itself. It sends its certicate (so B can
+v erify A's iden tit y) and a nonce (random v alue) to prev en t repla y attac ks.
+2. Step 2 (CHALLENGE): V ehicle B v eries A's certicate. B sends its o wn
+certicate and a c hallenge: it signs b oth nonces together. This pro v es B has the
+priv ate k ey matc hing the public k ey in its certicate.
+3. Step 3 (RESPONSE): V ehicle A v eries B's certicate and B's signature. A
+signs the com bined nonces bac k, pro ving it has its priv ate k ey . A also sends its
+ECDH ephemeral public k ey to b egin k ey exc hange.
+4. Step 4 (A CK): V ehicle B v eries A's signature and resp onse. B sends its ECDH
+ephemeral public k ey . Both sides no w compute the same shared secret and deriv e
+the session k ey using HKDF.
+13.2 Small Co de Segmen t: HELLO Message
+1 i m p o r t o s
+2 i m p o r t j s o n
+3 i m p o r t t i m e
+4 f r o m d a t a c l a s s e s i m p o r t d a t a c l a s s , a s d i c t
+5
+6 @ d a t a c l a s s
+7 c l a s s H e l l o M e s s a g e :
+8 " " " S t e p 1 o f t h e V 2 V a u t h e n t i c a t i o n h a n d s h a k e .
+9
+10 S e n t b y t h e i n i t i a t i n g v e h i c l e ( V e h i c l e A ) t o b e g i n
+a u t h e n t i c a t i o n .
+11 C o n t a i n s t h e v e h i c l e ' s i d e n t i t y c e r t i f i c a t e a n d a f r e s h n o n c e .
+51
+
+=== PAGE 54 ===
+CHAPTER 13. STEP 4  A UTHENTICA TION PR OTOCOL V2V Comm unication Securit y
+12 " " "
+13 v e h i c l e _ i d : s t r # H u m a n - r e a d a b l e v e h i c l e i d e n t i f i e r
+14 c e r t i f i c a t e _ p e m : s t r # V e h i c l e ' s X . 5 0 9 c e r t i f i c a t e i n P E M
+f o r m a t
+15 n o n c e : s t r # R a n d o m 3 2 - b y t e v a l u e ( h e x - e n c o d e d
+s t r i n g )
+16 t i m e s t a m p : f l o a t # U n i x t i m e s t a m p : w h e n t h i s m e s s a g e w a s
+c r e a t e d
+17 m e s s a g e _ t y p e : s t r = " H E L L O " # C o n s t a n t t y p e i d e n t i f i e r
+18
+19 d e f b u i l d _ h e l l o ( v e h i c l e _ i d : s t r , c e r t _ p e m : b y t e s ) - > H e l l o M e s s a g e :
+20 " " " C o n s t r u c t a H E L L O m e s s a g e f o r t h e a u t h e n t i c a t i o n h a n d s h a k e .
+" " "
+21 r e t u r n H e l l o M e s s a g e (
+22 v e h i c l e _ i d = v e h i c l e _ i d ,
+23 c e r t i f i c a t e _ p e m = c e r t _ p e m . d e c o d e ( ' u t f - 8 ' ) , # P E M i s t e x t
+24 n o n c e = o s . u r a n d o m ( 3 2 ) . h e x ( ) , # 3 2 r a n d o m b y t e s a s h e x
+s t r i n g
+25 # u r a n d o m ( 3 2 ) = 2 5 6 b i t s o f e n t r o p y f r o m O S C S P R N G
+26 t i m e s t a m p = t i m e . t i m e ( ) # S e c o n d s s i n c e U n i x e p o c h
+27 # R e c e i v e r w i l l r e j e c t i f a b s ( n o w - t i m e s t a m p ) > 5 s e c o n d s
+28 )
+29
+30 d e f s e r i a l i z e _ h e l l o ( m s g : H e l l o M e s s a g e ) - > b y t e s :
+31 " " " S e r i a l i z e H E L L O m e s s a g e t o J S O N b y t e s f o r t r a n s m i s s i o n . " " "
+32 r e t u r n j s o n . d u m p s ( a s d i c t ( m s g ) ) . e n c o d e ( ' u t f - 8 ' )
+33 # a s d i c t ( ) c o n v e r t s d a t a c l a s s t o d i c t i o n a r y
+34 # j s o n . d u m p s ( ) c o n v e r t s d i c t t o J S O N s t r i n g
+35 # e n c o d e ( ' u t f - 8 ' ) c o n v e r t s s t r i n g t o b y t e s f o r s o c k e t
+t r a n s m i s s i o n
+Listing 13.1: HELLO message construction  annotated
+13.3 F ull Claude Co de Prompt for Step 4
+Claude Co de Prompt  auth_proto col.p y
+C r e a t e ' a u t h _ p r o t o c o l . p y ' : t h e c o m p l e t e V 2 V m u t u a l
+a u t h e n t i c a t i o n p r o t o c o l .
+I M P L E M E N T t h e s e c l a s s e s a n d f u n c t i o n s :
+D A T A C L A S S E S ( w i t h J S O N s e r i a l i z a t i o n v i a t o _ j s o n ( ) / f r o m _ j s o n ( ) ) :
+1 . H e l l o M e s s a g e : v e h i c l e _ i d , c e r t i f i c a t e _ p e m , n o n c e _ h e x ,
+t i m e s t a m p , m s g _ t y p e = " H E L L O "
+52 Be ginner's Guide
+
+=== PAGE 55 ===
+CHAPTER 13. STEP 4  A UTHENTICA TION PR OTOCOL V2V Comm unication Securit y
+2 . C h a l l e n g e M e s s a g e : v e h i c l e _ i d , c e r t i f i c a t e _ p e m , n o n c e _ h e x ,
+s i g n e d _ n o n c e s _ h e x ,
+t i m e s t a m p , m s g _ t y p e = " C H A L L E N G E "
+3 . R e s p o n s e M e s s a g e : s i g n e d _ n o n c e s _ h e x , e c d h _ p u b l i c _ k e y _ p e m ,
+t i m e s t a m p ,
+m s g _ t y p e = " R E S P O N S E "
+4 . A c k M e s s a g e : e c d h _ p u b l i c _ k e y _ p e m , s e s s i o n _ e s t a b l i s h e d = T r u e ,
+m s g _ t y p e = " A C K "
+C L A S S E S :
+c l a s s R e p l a y C a c h e :
+" " " P r e v e n t s r e p l a y a t t a c k s b y t r a c k i n g s e e n n o n c e s . " " "
+d e f _ _ i n i t _ _ ( s e l f , w i n d o w _ s e c o n d s : i n t = 3 0 0 )
+d e f a d d _ n o n c e ( s e l f , n o n c e : s t r ) - > N o n e # R a i s e s
+R e p l a y E r r o r i f s e e n
+d e f i s _ f r e s h ( s e l f , n o n c e : s t r ) - > b o o l
+d e f c l e a n u p _ e x p i r e d ( s e l f ) - > i n t # R e m o v e s e x p i r e d n o n c e s ,
+r e t u r n s c o u n t
+c l a s s T i m e s t a m p V a l i d a t o r :
+" " " R e j e c t s m e s s a g e s w i t h t i m e s t a m p s o u t s i d e a c c e p t a b l e
+w i n d o w . " " "
+d e f _ _ i n i t _ _ ( s e l f , m a x _ a g e _ s e c o n d s : f l o a t = 5 . 0 )
+d e f v a l i d a t e ( s e l f , t i m e s t a m p : f l o a t ) - > N o n e # R a i s e s
+S t a l e M e s s a g e E r r o r
+c l a s s A u t h P r o t o c o l :
+" " " I m p l e m e n t s t h e f o u r - s t e p V 2 V a u t h e n t i c a t i o n h a n d s h a k e . " " "
+d e f _ _ i n i t _ _ ( s e l f , v e h i c l e _ i d , p r i v a t e _ k e y , c e r t i f i c a t e ,
+c a _ c e r t )
+d e f b u i l d _ h e l l o ( s e l f ) - > H e l l o M e s s a g e
+# C r e a t e H e l l o M e s s a g e ; s t o r e o u r n o n c e f o r l a t e r
+v e r i f i c a t i o n
+d e f p r o c e s s _ h e l l o ( s e l f , m s g : H e l l o M e s s a g e ) - >
+C h a l l e n g e M e s s a g e
+# 1 . V e r i f y m s g . c e r t i f i c a t e a g a i n s t C A c e r t ( s i g n a t u r e c h e c k
+)
+# 2 . V a l i d a t e t i m e s t a m p w i t h T i m e s t a m p V a l i d a t o r
+# 3 . C h e c k n o n c e w i t h R e p l a y C a c h e
+# 4 . S i g n ( t h e i r _ n o n c e + o u r _ n o n c e ) w i t h o u r p r i v a t e k e y
+# 5 . R e t u r n C h a l l e n g e M e s s a g e
+53 Be ginner's Guide
+
+=== PAGE 56 ===
+CHAPTER 13. STEP 4  A UTHENTICA TION PR OTOCOL V2V Comm unication Securit y
+d e f p r o c e s s _ c h a l l e n g e ( s e l f , m s g : C h a l l e n g e M e s s a g e ) - >
+R e s p o n s e M e s s a g e
+# 1 . V e r i f y m s g . c e r t i f i c a t e a g a i n s t C A c e r t
+# 2 . V a l i d a t e t i m e s t a m p , c h e c k n o n c e
+# 3 . V e r i f y s i g n e d _ n o n c e s c o v e r s o u r n o n c e ( f r o m H E L L O w e
+s e n t )
+# 4 . G e n e r a t e e p h e m e r a l E C D H k e y p a i r
+# 5 . S i g n ( o u r _ n o n c e + t h e i r _ n o n c e ) w i t h o u r p r i v a t e k e y
+# 6 . R e t u r n R e s p o n s e M e s s a g e
+d e f p r o c e s s _ r e s p o n s e ( s e l f , m s g : R e s p o n s e M e s s a g e ,
+h e l l o _ m s g : H e l l o M e s s a g e ) - > A c k M e s s a g e
+# 1 . V a l i d a t e t i m e s t a m p
+# 2 . V e r i f y s i g n a t u r e o n ( i n i t i a t o r _ n o n c e + o u r _ n o n c e )
+# 3 . C o m p u t e E C D H s h a r e d s e c r e t w i t h t h e i r e p h e m e r a l k e y
+# 4 . D e r i v e s e s s i o n k e y : H K D F ( s h a r e d _ s e c r e t , n o n c e _ a + n o n c e _ b
+)
+# 5 . S t o r e s e s s i o n _ k e y ; r e t u r n A c k M e s s a g e w i t h o u r E C D H
+p u b k e y
+d e f p r o c e s s _ a c k ( s e l f , m s g : A c k M e s s a g e ) - > b y t e s
+# 1 . C o m p u t e E C D H s h a r e d s e c r e t w i t h t h e i r e p h e m e r a l k e y
+# 2 . D e r i v e s a m e s e s s i o n k e y
+# 3 . R e t u r n s e s s i o n _ k e y b y t e s
+@ p r o p e r t y
+d e f s e s s i o n _ k e y ( s e l f ) - > b y t e s | N o n e
+C u s t o m e x c e p t i o n s : A u t h E r r o r , R e p l a y E r r o r , S t a l e M e s s a g e E r r o r ,
+C e r t i f i c a t e E r r o r
+L o g g i n g : e v e r y s t e p l o g g e d a t D E B U G / I N F O l e v e l w i t h v e h i c l e I D s
+a n d t i m e s t a m p s
+I n c l u d e a d e m o _ _ m a i n _ _ b l o c k s i m u l a t i n g t h e f u l l h a n d s h a k e
+b e t w e e n t w o i n s t a n c e s .
+54 Be ginner's Guide
+
+=== PAGE 57 ===
+Chapter 14
+Step 5  V2V Message Protocol
+14.1 Theory: Basic Safet y Messages (BSM)
+Key Concept
+SAE J2735 denes the Basic Safety Message (BSM) as the fundamen tal V2V
+data pac k et. A BSM con tains:
+ V ehicle ID (pseudon ymous, 4 b ytes)
+ GPS p osition: latitude, longitude (W GS84, 1/10th micro-degree)
+ Sp eed (0.02 m/s units)
+ Heading (0.0125 degree units, 0359.9875)
+ A cceleration (longitudinal and lateral)
+ Brak e system status (all wheels)
+ V ehicle size (width + length)
+BSMs are broadcast 10 times p er second. Our sim ulation sends them ev ery
+second for clarit y .
+Key Concept
+Wh y Sign-then-Encrypt? W e alw a ys sign BEF ORE encrypting:
+1. Sign: A ttac h ECDSA signature to plain text. This pro v es the original
+sender's iden tit y (signing is tied to the priv ate k ey).
+2. Encrypt: W rap the signed message in AES-GCM encryption. No w an
+attac k er cannot ev en read the message, let alone forge the signature.
+The alternativ e (Encrypt-then-Sign) has subtle vulnerabilities: an attac k er could
+strip the ciphertext from one message and attac h a dieren t sender's signature,
+creating am biguit y ab out who signed what.
+55
+
+=== PAGE 58 ===
+CHAPTER 14. STEP 5  V2V MESSA GE PR OTOCOL V2V Comm unication Securit y
+14.2 Small Co de Segmen t: BSM Structure
+1 i m p o r t t i m e
+2 f r o m d a t a c l a s s e s i m p o r t d a t a c l a s s , f i e l d
+3 f r o m t y p i n g i m p o r t O p t i o n a l
+4
+5 @ d a t a c l a s s
+6 c l a s s B a s i c S a f e t y M e s s a g e :
+7 " " " S A E J 2 7 3 5 - i n s p i r e d B a s i c S a f e t y M e s s a g e f o r V 2 V
+c o m m u n i c a t i o n .
+8
+9 T r a n s m i t t e d 1 0 x / s e c o n d i n r e a l V 2 V ; e v e r y s e c o n d i n o u r
+s i m u l a t i o n .
+10 A l l f i e l d s e x c e p t v e h i c l e _ i d a n d t i m e s t a m p a r e o b s e r v a b l e
+v e h i c l e s t a t e .
+11 " " "
+12 v e h i c l e _ i d : s t r # P s e u d o n y m o u s I D ( n o t r e a l p l a t e
+n u m b e r )
+13 s p e e d _ k m h : f l o a t # S p e e d i n k m / h ( 0 . 0 t o 3 0 0 . 0 )
+14 h e a d i n g _ d e g : f l o a t # C o m p a s s h e a d i n g i n d e g r e e s ( 0 . 0 =
+N o r t h )
+15 l a t i t u d e : f l o a t # G P S l a t i t u d e ( d e c i m a l d e g r e e s , W G S 8 4
+)
+16 l o n g i t u d e : f l o a t # G P S l o n g i t u d e ( d e c i m a l d e g r e e s ,
+W G S 8 4 )
+17 t i m e s t a m p : f l o a t = f i e l d ( # A u t o - f i l l e d i f n o t p r o v i d e d
+18 d e f a u l t _ f a c t o r y = t i m e . t i m e )
+19 s e q u e n c e _ n u m : i n t = 0 # I n c r e m e n t e d p e r m e s s a g e ; d e t e c t s
+m i s s i n g m s g s
+20 b r a k e _ a p p l i e d : b o o l = F a l s e # T r u e i f b r a k e s e n g a g e d
+21 a c c e l e r a t i o n : f l o a t = 0 . 0 # m / s ^ 2 ( p o s i t i v e = a c c e l e r a t i n g )
+22
+23 d e f t o _ b y t e s ( s e l f ) - > b y t e s :
+24 " " " S e r i a l i z e B S M t o J S O N b y t e s f o r s i g n i n g a n d t r a n s m i s s i o n
+. " " "
+25 i m p o r t j s o n
+26 r e t u r n j s o n . d u m p s ( {
+27 ' v e h i c l e _ i d ' : s e l f . v e h i c l e _ i d ,
+28 ' s p e e d _ k m h ' : s e l f . s p e e d _ k m h ,
+29 ' h e a d i n g _ d e g ' : s e l f . h e a d i n g _ d e g ,
+30 ' l a t i t u d e ' : s e l f . l a t i t u d e ,
+31 ' l o n g i t u d e ' : s e l f . l o n g i t u d e ,
+32 ' t i m e s t a m p ' : s e l f . t i m e s t a m p , # U s e d f o r r e p l a y
+d e t e c t i o n
+33 ' s e q u e n c e _ n u m ' : s e l f . s e q u e n c e _ n u m , # U s e d f o r g a p
+d e t e c t i o n
+34 ' b r a k e _ a p p l i e d ' : s e l f . b r a k e _ a p p l i e d ,
+56 Be ginner's Guide
+
+=== PAGE 59 ===
+CHAPTER 14. STEP 5  V2V MESSA GE PR OTOCOL V2V Comm unication Securit y
+35 ' a c c e l e r a t i o n ' : s e l f . a c c e l e r a t i o n ,
+36 } ) . e n c o d e ( ' u t f - 8 ' )
+37 # e n c o d e ( ) c o n v e r t s s t r i n g t o b y t e s ( r e q u i r e d f o r c r y p t o
+o p e r a t i o n s )
+Listing 14.1: BasicSafet yMessage dataclass  annotated
+14.3 F ull Claude Co de Prompt for Step 5
+Claude Co de Prompt  v2v_proto col.p y
+C r e a t e ' v 2 v _ p r o t o c o l . p y ' : t h e c o m p l e t e V 2 V s e c u r e m e s s a g e
+p r o t o c o l .
+I M P L E M E N T :
+@ d a t a c l a s s
+c l a s s B a s i c S a f e t y M e s s a g e :
+v e h i c l e _ i d : s t r
+s p e e d _ k m h : f l o a t
+h e a d i n g _ d e g : f l o a t
+l a t i t u d e : f l o a t
+l o n g i t u d e : f l o a t
+t i m e s t a m p : f l o a t = f i e l d ( d e f a u l t _ f a c t o r y = t i m e . t i m e )
+s e q u e n c e _ n u m : i n t = 0
+b r a k e _ a p p l i e d : b o o l = F a l s e
+a c c e l e r a t i o n _ m s 2 : f l o a t = 0 . 0
+M e t h o d s : t o _ b y t e s ( ) , f r o m _ b y t e s ( d a t a : b y t e s ) , t o _ d i c t ( ) ,
+f r o m _ d i c t ( d : d i c t )
+@ d a t a c l a s s
+c l a s s S e c u r e B S M :
+" " " W r a p p e r a d d i n g c r y p t o g r a p h i c s e c u r i t y f i e l d s t o a B S M . " " "
+b s m _ c i p h e r t e x t : b y t e s # A E S - G C M e n c r y p t e d B S M
+n o n c e : b y t e s # 1 2 - b y t e A E S - G C M n o n c e
+a u t h _ t a g : b y t e s # 1 6 - b y t e A E S - G C M a u t h t a g
+s i g n a t u r e : b y t e s # E C D S A s i g n a t u r e o v e r p l a i n t e x t
+B S M
+s e n d e r _ i d : s t r # V e h i c l e I D ( f o r q u i c k l o o k u p )
+s e q u e n c e _ n u m : i n t # C o p y o f i n n e r s e q n u m f o r r e p l a y
+c h e c k
+M e t h o d s : t o _ b y t e s ( ) , f r o m _ b y t e s ( )
+c l a s s S e q u e n c e N u m b e r M a n a g e r :
+" " " T r a c k s a n d v a l i d a t e s m e s s a g e s e q u e n c e n u m b e r s p e r p e e r
+57 Be ginner's Guide
+
+=== PAGE 60 ===
+CHAPTER 14. STEP 5  V2V MESSA GE PR OTOCOL V2V Comm unication Securit y
+. " " "
+d e f _ _ i n i t _ _ ( s e l f , m a x _ g a p : i n t = 1 0 )
+d e f v a l i d a t e ( s e l f , s e n d e r _ i d : s t r , s e q _ n u m : i n t ) - > b o o l
+# R e t u r n s F a l s e i f : s e q _ n u m a l r e a d y s e e n , o r g a p > m a x _ g a p
+d e f g e t _ s t a t s ( s e l f , s e n d e r _ i d : s t r ) - > d i c t
+# R e t u r n s : { r e c e i v e d , m i s s i n g , l a s t _ s e q , g a p _ c o u n t }
+c l a s s M e s s a g e L o g g e r :
+" " " L o g s a l l s e n t / r e c e i v e d m e s s a g e s w i t h s e c u r i t y p r o p e r t i e s
+. " " "
+d e f l o g _ s e n t ( s e l f , b s m : B a s i c S a f e t y M e s s a g e , s e c u r e :
+S e c u r e B S M )
+d e f l o g _ r e c e i v e d ( s e l f , s e c u r e : S e c u r e B S M , b s m :
+B a s i c S a f e t y M e s s a g e ,
+s e c u r i t y _ p r o p s : d i c t )
+# s e c u r i t y _ p r o p s k e y s : a u t h e n t i c a t e d , e n c r y p t e d ,
+i n t e g r i t y _ v e r i f i e d ,
+# r e p l a y _ p r o t e c t e d , s i g n a t u r e _ v a l i d
+d e f g e t _ r e c e n t ( s e l f , c o u n t : i n t = 2 0 ) - > l i s t [ d i c t ]
+d e f g e t _ a l e r t s ( s e l f ) - > l i s t [ d i c t ]
+F U N C T I O N S :
+d e f s e c u r e _ s e n d ( b s m : B a s i c S a f e t y M e s s a g e , s e s s i o n _ k e y : b y t e s ,
+s i g n i n g _ k e y , s e q _ m g r : S e q u e n c e N u m b e r M a n a g e r ,
+l o g g e r : M e s s a g e L o g g e r ) - > b y t e s :
+" " " S i g n - t h e n - e n c r y p t a B S M f o r t r a n s m i s s i o n .
+1 . S e r i a l i z e B S M t o b y t e s
+2 . E C D S A s i g n t h e s e r i a l i z e d b y t e s ( p r o d u c e s s i g n a t u r e )
+3 . A E S - G C M e n c r y p t ( B S M _ b y t e s + s i g n a t u r e ) w i t h s e s s i o n _ k e y
+4 . B u i l d S e c u r e B S M w r a p p e r
+5 . L o g a n d r e t u r n s e r i a l i z e d S e c u r e B S M b y t e s
+" " "
+d e f s e c u r e _ r e c e i v e ( d a t a : b y t e s , s e s s i o n _ k e y : b y t e s ,
+p e e r _ v e r i f y _ k e y , s e q _ m g r :
+S e q u e n c e N u m b e r M a n a g e r ,
+r e p l a y _ c a c h e , l o g g e r : M e s s a g e L o g g e r ,
+t i m e s t a m p _ v a l i d a t o r ) - > B a s i c S a f e t y M e s s a g e :
+" " " D e c r y p t , v e r i f y , a n d p a r s e a r e c e i v e d S e c u r e B S M .
+1 . P a r s e S e c u r e B S M f r o m b y t e s
+2 . C h e c k s e q u e n c e n u m b e r ( r e p l a y / g a p d e t e c t i o n )
+3 . A E S - G C M d e c r y p t c i p h e r t e x t u s i n g s e s s i o n _ k e y
+4 . S p l i t d e c r y p t e d b y t e s i n t o B S M _ b y t e s a n d s i g n a t u r e
+5 . E C D S A v e r i f y s i g n a t u r e a g a i n s t p e e r _ v e r i f y _ k e y
+6 . C h e c k B S M t i m e s t a m p w i t h t i m e s t a m p _ v a l i d a t o r
+58 Be ginner's Guide
+
+=== PAGE 61 ===
+CHAPTER 14. STEP 5  V2V MESSA GE PR OTOCOL V2V Comm unication Securit y
+7 . P a r s e a n d r e t u r n B a s i c S a f e t y M e s s a g e
+8 . L o g w i t h f u l l s e c u r i t y _ p r o p s d i c t
+O n f a i l u r e : r a i s e s p e c i f i c e x c e p t i o n ( T a m p e r E r r o r ,
+R e p l a y E r r o r , e t c . )
+" " "
+C u s t o m e x c e p t i o n s : T a m p e r E r r o r , R e p l a y E r r o r , D e c r y p t i o n E r r o r ,
+S e q u e n c e E r r o r
+59 Be ginner's Guide
+
+=== PAGE 62 ===
+Chapter 15
+Step 6  Main V ehicle Node
+15.1 Theory: So c k et Programming and Threading
+Key Concept
+TCP So c k et programming basics:
+ A so c k et is one end of a net w ork connection  lik e a phone handset. T w o
+so c k ets connected together form a comm unication c hannel.
+ Serv er so c k et : calls bind() (sets up address/p ort), listen() (w aits for
+calls), accept() (answ ers a call).
+ Clien t so c k et : calls connect() to dial the serv er.
+ Threading: W e need a separate thread for eac h connection b ecause
+accept() blo c ks un til a new connection arriv es  if w e did not use threads,
+w e could only handle one v ehicle at a time.
+15.2 Small Co de Segmen t: So c k et Serv er
+1 i m p o r t s o c k e t
+2 i m p o r t t h r e a d i n g
+3 i m p o r t l o g g i n g
+4
+5 c l a s s V e h i c l e N o d e :
+6 d e f _ _ i n i t _ _ ( s e l f , v e h i c l e _ i d : s t r , p o r t : i n t ) :
+7 s e l f . v e h i c l e _ i d = v e h i c l e _ i d
+8 s e l f . p o r t = p o r t
+9 s e l f . r u n n i n g = F a l s e # F l a g t o c o n t r o l m a i n l o o p
+10
+11 # A F _ I N E T = I P v 4 , S O C K _ S T R E A M = T C P ( r e l i a b l e , o r d e r e d )
+12 s e l f . s e r v e r _ s o c k = s o c k e t . s o c k e t (
+13 s o c k e t . A F _ I N E T , s o c k e t . S O C K _ S T R E A M
+14 )
+60
+
+=== PAGE 63 ===
+CHAPTER 15. STEP 6  MAIN VEHICLE NODE V2V Comm unication Securit y
+15
+16 # A l l o w p o r t r e u s e i m m e d i a t e l y a f t e r p r o c e s s e n d s
+17 # W i t h o u t t h i s , y o u o f t e n g e t " A d d r e s s a l r e a d y i n u s e "
+e r r o r s
+18 # w h e n r e s t a r t i n g t h e n o d e d u r i n g d e v e l o p m e n t
+19 s e l f . s e r v e r _ s o c k . s e t s o c k o p t (
+20 s o c k e t . S O L _ S O C K E T , # S o c k e t - l e v e l o p t i o n
+21 s o c k e t . S O _ R E U S E A D D R , # O p t i o n : a l l o w a d d r e s s r e u s e
+22 1 # V a l u e : e n a b l e ( 1 = T r u e )
+23 )
+24
+25 d e f s t a r t _ s e r v e r ( s e l f ) :
+26 " " " B i n d t o p o r t a n d b e g i n a c c e p t i n g c o n n e c t i o n s i n
+b a c k g r o u n d . " " "
+27 # B i n d t o a l l i n t e r f a c e s ( 0 . 0 . 0 . 0 ) o n o u r p o r t
+28 # ' ' = ' 0 . 0 . 0 . 0 ' = l i s t e n o n a l l n e t w o r k i n t e r f a c e s
+29 s e l f . s e r v e r _ s o c k . b i n d ( ( ' ' , s e l f . p o r t ) )
+30
+31 # L i s t e n w i t h a b a c k l o g o f 5 p e n d i n g c o n n e c t i o n s
+32 # ( q u e u e o f c a l l e r s w a i t i n g t o b e a c c e p t e d )
+33 s e l f . s e r v e r _ s o c k . l i s t e n ( 5 )
+34 l o g g i n g . i n f o ( f " [ { s e l f . v e h i c l e _ i d } ] L i s t e n i n g o n p o r t { s e l f .
+p o r t } " )
+35 s e l f . r u n n i n g = T r u e
+36
+37 # S t a r t t h e a c c e p t l o o p i n a d a e m o n t h r e a d
+38 # d a e m o n = T r u e m e a n s t h r e a d d i e s w h e n m a i n p r o g r a m e x i t s
+39 t = t h r e a d i n g . T h r e a d ( t a r g e t = s e l f . _ a c c e p t _ l o o p , d a e m o n = T r u e )
+40 t . s t a r t ( )
+41
+42 d e f _ a c c e p t _ l o o p ( s e l f ) :
+43 " " " C o n t i n u o u s l y a c c e p t i n c o m i n g c o n n e c t i o n s . " " "
+44 w h i l e s e l f . r u n n i n g :
+45 t r y :
+46 c o n n , a d d r = s e l f . s e r v e r _ s o c k . a c c e p t ( ) # B l o c k s
+h e r e
+47 # S t a r t a n e w t h r e a d f o r e a c h c o n n e c t i o n
+48 c t = t h r e a d i n g . T h r e a d (
+49 t a r g e t = s e l f . h a n d l e _ c o n n e c t i o n ,
+50 a r g s = ( c o n n , a d d r ) ,
+51 d a e m o n = T r u e
+52 )
+53 c t . s t a r t ( )
+54 e x c e p t O S E r r o r :
+55 b r e a k # S o c k e t w a s c l o s e d - - - e x i t l o o p
+Listing 15.1: TCP so c k et serv er setup  annotated
+61 Be ginner's Guide
+
+=== PAGE 64 ===
+CHAPTER 15. STEP 6  MAIN VEHICLE NODE V2V Comm unication Securit y
+15.3 F ull Claude Co de Prompt for Step 6
+Claude Co de Prompt  v ehicle_no de.p y
+C r e a t e ' v e h i c l e _ n o d e . p y ' : t h e c o m p l e t e V 2 V v e h i c l e n o d e
+i m p l e m e n t a t i o n .
+c l a s s V e h i c l e N o d e :
+d e f _ _ i n i t _ _ ( s e l f , v e h i c l e _ i d : s t r , p o r t : i n t ,
+c e r t _ p a t h : s t r , k e y _ p a t h : s t r , c a _ c e r t _ p a t h :
+s t r ,
+b s m _ i n t e r v a l _ s e c o n d s : f l o a t = 1 . 0 )
+# L o a d s c e r t i f i c a t e a n d p r i v a t e k e y f r o m P E M f i l e s
+# I n i t i a l i s e s : a u t h _ p r o t o c o l , s e q _ m a n a g e r , r e p l a y _ c a c h e ,
+# t i m e s t a m p _ v a l i d a t o r , m e s s a g e _ l o g g e r ,
+f l a s k _ s t a t e d i c t
+d e f s t a r t _ s e r v e r ( s e l f ) - > N o n e
+# B i n d T C P s o c k e t t o s e l f . p o r t
+# S t a r t _ a c c e p t _ l o o p i n d a e m o n t h r e a d
+# L o g : " [ v e h i c l e _ i d ] L i s t e n i n g o n p o r t { p o r t } "
+d e f c o n n e c t _ t o _ p e e r ( s e l f , h o s t : s t r , p o r t : i n t ) - > b o o l
+# T C P c o n n e c t t o ( h o s t , p o r t )
+# R u n f u l l a u t h e n t i c a t i o n h a n d s h a k e a s I N I T I A T O R :
+# b u i l d _ h e l l o - > s e n d - > r e c v c h a l l e n g e - >
+p r o c e s s _ c h a l l e n g e
+# - > s e n d r e s p o n s e - > r e c v a c k - > p r o c e s s _ a c k
+# S t o r e p e e r ' s p u b l i c k e y a n d s e s s i o n _ k e y
+# S t a r t r e c e i v e _ l o o p a n d b s m _ s e n d _ l o o p i n t h r e a d s
+# R e t u r n T r u e o n s u c c e s s , F a l s e o n f a i l u r e
+# L o g e a c h h a n d s h a k e s t e p w i t h t i m i n g
+d e f h a n d l e _ c o n n e c t i o n ( s e l f , c o n n : s o c k e t . s o c k e t , a d d r : t u p l e
+) - > N o n e
+# R u n f u l l a u t h e n t i c a t i o n h a n d s h a k e a s R E S P O N D E R :
+# r e c v h e l l o - > p r o c e s s _ h e l l o - > s e n d c h a l l e n g e
+# - > r e c v r e s p o n s e - > p r o c e s s _ r e s p o n s e - > s e n d a c k
+# S t o r e p e e r i n f o a n d s e s s i o n _ k e y
+# S t a r t r e c e i v e _ l o o p a n d b s m _ s e n d _ l o o p
+d e f _ b s m _ s e n d _ l o o p ( s e l f , c o n n : s o c k e t . s o c k e t ) - > N o n e
+# E v e r y s e l f . b s m _ i n t e r v a l _ s e c o n d s s e c o n d s :
+# B u i l d B S M w i t h s i m u l a t e d s p e e d / h e a d i n g / G P S ( s l i g h t l y
+r a n d o m )
+# C a l l s e c u r e _ s e n d ( ) a n d t r a n s m i t b y t e s o v e r c o n n
+62 Be ginner's Guide
+
+=== PAGE 65 ===
+CHAPTER 15. STEP 6  MAIN VEHICLE NODE V2V Comm unication Securit y
+# L o g : " S e n t B S M # N : s p e e d = X , h e a d i n g = Y "
+# I n c r e m e n t s e q u e n c e n u m b e r
+d e f _ r e c e i v e _ l o o p ( s e l f , c o n n : s o c k e t . s o c k e t ) - > N o n e
+# L o o p : r e c v b y t e s , c a l l s e c u r e _ r e c e i v e ( )
+# L o g r e c e i v e d B S M c o n t e n t a n d a l l s e c u r i t y p r o p e r t i e s
+# O n T a m p e r E r r o r / R e p l a y E r r o r : l o g A L E R T a n d a d d t o
+f l a s k _ s t a t e a l e r t s
+d e f g e t _ s t a t e ( s e l f ) - > d i c t
+# R e t u r n d i c t f o r F l a s k d a s h b o a r d :
+# { v e h i c l e _ i d , c e r t _ s t a t u s , p e e r _ i d , a u t h _ s t a t u s ,
+s e s s i o n _ a c t i v e ,
+# r e c e n t _ m e s s a g e s : [ . . . ] , a l e r t s : [ . . . ] , s t a t s : { . . . } }
+d e f s h u t d o w n ( s e l f ) - > N o n e
+# S e t s e l f . r u n n i n g = F a l s e
+# C l o s e a l l s o c k e t s
+# L o g : " V e h i c l e n o d e s h u t d o w n c o m p l e t e "
+C L I a r g u m e n t s ( a r g p a r s e ) :
+- - v e h i c l e - i d ( r e q u i r e d )
+- - p o r t ( r e q u i r e d )
+- - c e r t p a t h t o c e r t i f i c a t e P E M
+- - k e y p a t h t o p r i v a t e k e y P E M
+- - c a - c e r t p a t h t o C A c e r t i f i c a t e P E M
+- - p e e r - h o s t h o s t t o c o n n e c t t o ( o p t i o n a l ; i f o m i t t e d , w a i t
+f o r c o n n e c t i o n )
+- - p e e r - p o r t p o r t t o c o n n e c t t o
+- - b s m - i n t e r v a l s e c o n d s b e t w e e n B S M s ( d e f a u l t : 1 . 0 )
+- - d a s h b o a r d - p o r t F l a s k p o r t ( d e f a u l t : 5 0 0 0 )
+S t a r t F l a s k d a s h b o a r d i n a d a e m o n t h r e a d .
+U s e s t r u c t u r e d l o g g i n g w i t h v e h i c l e _ i d p r e f i x o n e v e r y m e s s a g e .
+H a n d l e K e y b o a r d I n t e r r u p t g r a c e f u l l y w i t h s h u t d o w n ( ) .
+63 Be ginner's Guide
+
+=== PAGE 66 ===
+Chapter 16
+Step 7  Flask Dashboard
+16.1 Theory: Flask REST API
+Key Concept
+Flask is a micro w eb framew ork for Python. Our dash b oard w orks lik e this:
+1. The v ehicle no de runs a Flask serv er in a bac kground thread
+2. A bro wser op ens http://localhost:5000
+3. The bro wser p erio dically fetc hes /api/state  a JSON endp oin t that
+returns curren t v ehicle status
+4. The HTML page uses the bro wser's fetch() API to call this endp oin t
+ev ery 3 seconds and up date the displa y
+This a v oids W ebSo c k ets or complex framew orks  just plain HTTP p olling.
+16.2 F ull Claude Co de Prompt for Step 7
+Claude Co de Prompt  Flask Dash b oard
+C r e a t e ' d a s h b o a r d / a p p . p y ' a n d ' d a s h b o a r d / t e m p l a t e s / d a s h b o a r d .
+h t m l '
+f o r t h e V 2 V s e c u r i t y F l a s k d a s h b o a r d .
+a p p . p y r e q u i r e m e n t s :
+- F l a s k a p p w i t h C O R S h e a d e r s ( f o r d e v c o n v e n i e n c e )
+- R o u t e G E T / - > r e n d e r d a s h b o a r d . h t m l
+- R o u t e G E T / a p i / s t a t e - > r e t u r n n o d e . g e t _ s t a t e ( ) a s J S O N
+- R o u t e G E T / a p i / a l e r t s - > r e t u r n n o d e . g e t _ s t a t e ( ) [ ' a l e r t s ' ] a s
+J S O N
+- R o u t e P O S T / a p i / c l e a r _ a l e r t s - > c l e a r t h e a l e r t s l i s t
+- A c c e p t ' n o d e ' a s p a r a m e t e r ( V e h i c l e N o d e i n s t a n c e ) t o e m b e d i n
+a p p c o n t e x t
+64
+
+=== PAGE 67 ===
+CHAPTER 16. STEP 7  FLASK D ASHBO ARD V2V Comm unication Securit y
+- R u n o n c o n f i g u r a b l e p o r t ( d e f a u l t 5 0 0 0 )
+d a s h b o a r d . h t m l r e q u i r e m e n t s ( N O J a v a S c r i p t f r a m e w o r k s , p l a i n
+H T M L / C S S / f e t c h o n l y ) :
+- F u l l - p a g e l a y o u t w i t h d a r k h e a d e r : " V 2 V S e c u r i t y D a s h b o a r d - {
+v e h i c l e _ i d } "
+- C S S : g r i d l a y o u t , g r e e n / r e d s t a t u s b a d g e s , b l i n k i n g r e d f o r
+a l e r t s
+- T h r e e s t a t u s p a n e l s a c r o s s t o p :
+P a n e l 1 " C e r t i f i c a t e S t a t u s " :
+- B a d g e : G R E E N " V A L I D " o r R E D " E X P I R E D " o r Y E L L O W " W A R N I N G
+"
+- C e r t i f i c a t e C N , i s s u e r , e x p i r y d a t e
+P a n e l 2 " A u t h e n t i c a t i o n S t a t u s " :
+- B a d g e : G R E E N " A U T H E N T I C A T E D " o r R E D " N O T A U T H " o r O R A N G E
+" P E N D I N G "
+- P e e r v e h i c l e I D , s e s s i o n k e y s t a t u s , f o r w a r d s e c r e c y
+f l a g
+P a n e l 3 " S e c u r i t y A l e r t s " :
+- C o u n t o f a c t i v e a l e r t s
+- L a t e s t a l e r t t e x t ( o r " N o a l e r t s " i f n o n e )
+- " C l e a r A l e r t s " b u t t o n
+- M e s s a g e s t a b l e ( l a s t 2 0 , n e w e s t f i r s t ) :
+C o l u m n s : T i m e | F r o m / T o | S p e e d | H e a d i n g | A u t h | E n c | I n t
+| R p l y
+L a s t f o u r c o l u m n s s h o w g r e e n c h e c k m a r k o r r e d X
+R o w b a c k g r o u n d : y e l l o w i f a n y s e c u r i t y p r o p e r t y i s f a l s e
+- A u t o - r e f r e s h e v e r y 3 s e c o n d s u s i n g :
+s e t I n t e r v a l ( a s y n c ( ) = > {
+c o n s t r = a w a i t f e t c h ( ' / a p i / s t a t e ' ) ;
+c o n s t d a t a = a w a i t r . j s o n ( ) ;
+u p d a t e U I ( d a t a ) ;
+} , 3 0 0 0 ) ;
+- I f a l e r t s a r r a y i s n o n - e m p t y , m a k e t h e a l e r t s p a n e l b l i n k r e d
+( C S S a n i m a t i o n )
+S t y l i n g : m i n i m a l , p r o f e s s i o n a l , d a r k h e a d e r ( # 1 a 2 3 7 e ) , w h i t e
+b o d y , m o n o s p a c e f o n t
+f o r I D s a n d h e x v a l u e s . M o b i l e - r e s p o n s i v e . N o e x t e r n a l C S S
+f r a m e w o r k s .
+65 Be ginner's Guide
+
+=== PAGE 68 ===
+Chapter 17
+Step 8  Attack Demonstration
+Scripts
+17.1 8a  Repla y A ttac k
+Theory: The attac k er:
+1. Captures a v alid, encrypted BSM from V ehicle A at time T
+2. W aits 10 seconds (b ey ond the 5-second repla y windo w)
+3. Retransmits the identic al bytes to V ehicle B
+Detection: V ehicle B's repla y cac he has stored the nonce from the original message.
+When the repla y arriv es, ReplayCache.add_nonce() raises ReplayError b ecause the
+nonce is already in the cac he. The timestamp c hec k also catc hes it: no w −T > 5 s.
+Claude Co de Prompt  repla y_attac k.p y
+C r e a t e ' a t t a c k s / r e p l a y _ a t t a c k . p y ' :
+A s c r i p t t h a t :
+1 . C o n n e c t s t o V e h i c l e A ' s T C P p o r t a n d I N T E R C E P T S o n e B S M
+( a c t s a s a p r o x y : r e c e i v e s f r o m A , l o g s t h e r a w b y t e s ,
+f o r w a r d s t o B )
+2 . W a i t s s e l f . d e l a y s e c o n d s ( d e f a u l t : 1 0 , l a r g e r t h a n 5 - s e c o n d
+r e p l a y w i n d o w )
+3 . O p e n s a N E W c o n n e c t i o n t o V e h i c l e B a n d s e n d s t h e S A M E r a w
+b y t e s a g a i n
+4 . C a p t u r e s V e h i c l e B ' s r e s p o n s e ( w h i c h s h o u l d b e a n e r r o r /
+r e j e c t i o n )
+5 . P r i n t s a c o l o u r e d t e r m i n a l r e p o r t :
+- A T T A C K S E N T : t i m e s t a m p , s i z e o f r e p l a y e d p a c k e t
+- R E S U L T : R E J E C T E D ( i f B l o g s r e p l a y e r r o r ) o r A C C E P T E D ( i f
+a t t a c k s u c c e e d e d )
+- R e a s o n s h o w n : " N o n c e a l r e a d y s e e n " o r " T i m e s t a m p t o o o l d "
+66
+
+=== PAGE 69 ===
+CHAPTER 17. STEP 8  A TT A CK DEMONSTRA TION SCRIPTS V2V Comm unication Securit y
+T h e s c r i p t s h o u l d N O T a u t h e n t i c a t e - - - i t j u s t r e a d s r a w b y t e s
+o f f t h e w i r e .
+U s e a r g p a r s e : - - v e h i c l e - a - p o r t , - - v e h i c l e - b - h o s t , - - v e h i c l e - b -
+p o r t , - - d e l a y
+P r i n t A S C I I a r t b a n n e r : " [ R E P L A Y A T T A C K D E M O N S T R A T I O N ] "
+E x p e c t e d o u t p u t m u s t s h o w t h e a t t a c k b e i n g R E J E C T E D .
+A d d c o m m e n t s e x p l a i n i n g e x a c t l y w h a t m a k e s t h i s a t t a c k f a i l .
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+| [ R E P L A Y A T T A C K D E M O N S T R A T I O N ] |
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+[ 1 0 : 4 5 : 0 1 ] C a p t u r e d B S M f r o m V e h i c l e A ( 3 1 2 b y t e s )
+[ 1 0 : 4 5 : 0 1 ] B S M n o n c e : a 3 f 2 e 1 d 0 9 b 8 c 7 a 6 5 . . .
+[ 1 0 : 4 5 : 0 1 ] B S M t i m e s t a m p : 1 0 : 4 5 : 0 1 . 2 3 4
+[ 1 0 : 4 5 : 0 1 ] W a i t i n g 1 0 s e c o n d s b e f o r e r e p l a y i n g . . .
+[ 1 0 : 4 5 : 1 1 ] S e n d i n g c a p t u r e d B S M t o V e h i c l e B . . .
+[ 1 0 : 4 5 : 1 1 ] V e h i c l e B r e s p o n s e : E R R O R
+R E S U L T : A T T A C K R E J E C T E D
+R e a s o n : T i m e s t a m p t o o o l d ( 1 0 . 1 s > 5 . 0 s w i n d o w )
+A N D N o n c e a 3 f 2 e 1 d 0 9 b 8 c 7 a 6 5 a l r e a d y i n r e p l a y c a c h e
+S E C U R I T Y P R O P E R T I E S T H A T P R E V E N T E D T H I S A T T A C K :
+[ [ O K ] ] T i m e s t a m p v a l i d a t i o n ( 5 - s e c o n d r e p l a y w i n d o w )
+[ [ O K ] ] N o n c e c a c h e ( 2 5 6 - b i t n o n c e s s t o r e d f o r 3 0 0 s e c o n d s )
+[ [ O K ] ] S e q u e n c e n u m b e r g a p d e t e c t e d ( s e q # 7 s e e n t w i c e )
+Listing 17.1: Exp ected repla y attac k output
+17.2 8b  T amp er A ttac k
+Theory: The attac k er sits b et w een A and B (b y ARP sp o ong or net w ork recongu-
+ration). It in tercepts encrypted BSMs, mo dies b ytes in the ciphertext, and forw ards
+the mo died b ytes. Because AES-GCM pro vides authen ticated encryption, an y mo d-
+ication to the ciphertext c hanges the authen tication tag  the receiv er's decryption
+attempt fails.
+Claude Co de Prompt  tamp er_attac k.p y
+C r e a t e ' a t t a c k s / t a m p e r _ a t t a c k . p y ' :
+A p r o x y s c r i p t t h a t :
+1 . L i s t e n s o n a p o r t b e t w e e n A a n d B ( e . g . , 9 0 0 3 )
+2 . F o r w a r d s b y t e s F R O M A T O B , b u t f l i p s 3 r a n d o m b i t s i n t h e
+c i p h e r t e x t
+67 Be ginner's Guide
+
+=== PAGE 70 ===
+CHAPTER 17. STEP 8  A TT A CK DEMONSTRA TION SCRIPTS V2V Comm unication Securit y
+3 . L o g s : o r i g i n a l b y t e s ( h e x ) , m o d i f i e d b y t e s ( h e x ) , w h i c h b i t s
+w e r e f l i p p e d
+4 . C a p t u r e s B ' s r e s p o n s e
+E x p e c t e d r e s u l t : B ' s A E S - G C M d e c r y p t i o n r a i s e s I n v a l i d T a g e r r o r
+( t h e a u t h e n t i c a t i o n t a g n o l o n g e r m a t c h e s t h e m o d i f i e d
+c i p h e r t e x t )
+P r i n t b a n n e r : " [ T A M P E R A T T A C K D E M O N S T R A T I O N ] "
+S h o w e x a c t l y w h i c h b y t e s w e r e m o d i f i e d a n d t h e i r b e f o r e / a f t e r
+v a l u e s .
+S h o w t h e e r r o r V e h i c l e B r a i s e s .
+E x p l a i n i n o u t p u t w h y t h e a t t a c k w a s c a u g h t .
+a r g p a r s e : - - l i s t e n - p o r t , - - v e h i c l e - b - h o s t , - - v e h i c l e - b - p o r t , - -
+f l i p - b y t e s ( d e f a u l t : 3 )
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+| [ T A M P E R A T T A C K D E M O N S T R A T I O N ] |
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+[ 1 0 : 4 6 : 0 3 ] I n t e r c e p t e d p a c k e t ( 3 1 2 b y t e s ) f r o m V e h i c l e A
+[ 1 0 : 4 6 : 0 3 ] M O D I F Y I N G b y t e s : p o s i t i o n s [ 8 7 , 1 4 3 , 2 0 1 ]
+B y t e [ 8 7 ] : 0 x A 3 - > 0 x B 3 ( b i t 4 f l i p p e d )
+B y t e [ 1 4 3 ] : 0 x 2 F - > 0 x 2 E ( b i t 0 f l i p p e d )
+B y t e [ 2 0 1 ] : 0 x C 8 - > 0 x C 0 ( b i t 3 f l i p p e d )
+[ 1 0 : 4 6 : 0 3 ] F o r w a r d i n g M O D I F I E D p a c k e t t o V e h i c l e B . . .
+[ 1 0 : 4 6 : 0 3 ] V e h i c l e B r a i s e d : I n v a l i d T a g - A E S - G C M a u t h e n t i c a t i o n F A I L E D
+R E S U L T : A T T A C K D E T E C T E D A N D R E J E C T E D
+R e a s o n : A E S - 2 5 6 - G C M a u t h e n t i c a t i o n t a g m i s m a t c h
+E v e n 1 - b i t c h a n g e i n c i p h e r t e x t p r o d u c e s d i f f e r e n t t a g
+S E C U R I T Y P R O P E R T I E S T H A T P R E V E N T E D T H I S A T T A C K :
+[ [ O K ] ] A E S - 2 5 6 - G C M A u t h e n t i c a t e d E n c r y p t i o n ( d e t e c t s a n y m o d i f i c a t i o n )
+[ [ O K ] ] E C D S A s i g n a t u r e ( w o u l d a l s o f a i l o n d e c r y p t e d p l a i n t e x t )
+[ [ O K ] ] H M A C - S H A 2 5 6 ( a d d i t i o n a l i n t e g r i t y l a y e r )
+Listing 17.2: Exp ected tamp er attac k output
+17.3 8c  Man-in-the-Middle A ttac k
+Claude Co de Prompt  mitm_attac k.p y
+C r e a t e ' a t t a c k s / m i t m _ a t t a c k . p y ' :
+S i m u l a t e a M I T M a t t a c k e r t h a t :
+1 . I n t e r c e p t s V e h i c l e A ' s H E L L O m e s s a g e d u r i n g a u t h e n t i c a t i o n
+2 . A t t e m p t s t o r e p l a c e V e h i c l e A ' s c e r t i f i c a t e w i t h a F A K E s e l f -
+68 Be ginner's Guide
+
+=== PAGE 71 ===
+CHAPTER 17. STEP 8  A TT A CK DEMONSTRA TION SCRIPTS V2V Comm unication Securit y
+s i g n e d c e r t i f i c a t e
+t h a t t h e a t t a c k e r g e n e r a t e s o n t h e f l y
+3 . F o r w a r d s t h e m o d i f i e d H E L L O ( w i t h f a k e c e r t ) t o V e h i c l e B
+E x p e c t e d r e s u l t : V e h i c l e B v e r i f i e s t h e c e r t i f i c a t e ' s s i g n a t u r e
+a g a i n s t t h e C A
+c e r t i f i c a t e . S i n c e t h e f a k e c e r t w a s N O T s i g n e d b y t h e r e a l C A ,
+v e r i f i c a t i o n F A I L S .
+R a i s e : C e r t i f i c a t e E r r o r : " C e r t i f i c a t e s i g n a t u r e v e r i f i c a t i o n
+f a i l e d "
+A d d i t i o n a l l y :
+4 . S h o w w h a t h a p p e n s i f t h e a t t a c k e r s i m p l y R E L A Y S t h e H E L L O
+u n c h a n g e d :
+T h e a t t a c k e r c a n n o t d e c r y p t t h e s u b s e q u e n t m e s s a g e s b e c a u s e
+t h e y d o n o t h a v e
+V e h i c l e A ' s p r i v a t e k e y . S h o w t h a t t h e c h a l l e n g e - r e s p o n s e
+p r o v e s t h i s .
+P r i n t b a n n e r : " [ M A N - I N - T H E - M I D D L E A T T A C K D E M O N S T R A T I O N ] "
+S h o w T W O s c e n a r i o s :
+A ) A t t a c k e r r e p l a c e s c e r t i f i c a t e - > C A v e r i f i c a t i o n f a i l s
+B ) A t t a c k e r r e l a y s e v e r y t h i n g - > C a n n o t f o r g e c h a l l e n g e
+r e s p o n s e
+( w o u l d n e e d V e h i c l e A ' s p r i v a t e k e y )
+a r g p a r s e : - - l i s t e n - p o r t , - - v e h i c l e - b - h o s t , - - v e h i c l e - b - p o r t
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+| [ M A N - I N - T H E - M I D D L E A T T A C K D E M O ] |
++ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = +
+S C E N A R I O A : C e r t i f i c a t e R e p l a c e m e n t A t t a c k
+[ 1 0 : 4 7 : 0 1 ] I n t e r c e p t e d H E L L O f r o m V e h i c l e A
+[ 1 0 : 4 7 : 0 1 ] G e n e r a t i n g f a k e c e r t i f i c a t e ( s e l f - s i g n e d ) . . .
+[ 1 0 : 4 7 : 0 1 ] R e p l a c i n g c e r t i n H E L L O w i t h f a k e c e r t
+[ 1 0 : 4 7 : 0 1 ] F o r w a r d i n g m o d i f i e d H E L L O t o V e h i c l e B
+[ 1 0 : 4 7 : 0 1 ] V e h i c l e B : V e r i f y i n g c e r t i f i c a t e a g a i n s t C A . . .
+[ 1 0 : 4 7 : 0 1 ] R E S U L T : C e r t i f i c a t e E r r o r : C A s i g n a t u r e v e r i f i c a t i o n F A I L E D
+F a k e c e r t n o t s i g n e d b y V 2 V - R o o t - C A
+S C E N A R I O B : R e l a y A t t a c k
+[ 1 0 : 4 7 : 0 2 ] R e l a y i n g a u t h e n t i c H E L L O u n c h a n g e d . . .
+[ 1 0 : 4 7 : 0 2 ] V e h i c l e B s e n d s C H A L L E N G E w i t h n o n c e : f 3 a 2 b 1 c 0 . . .
+[ 1 0 : 4 7 : 0 2 ] C h a l l e n g e r e q u i r e s : S i g n ( n o n c e _ a + n o n c e _ b ) w i t h V e h i c l e A ' s p r i v a t e k e y
+[ 1 0 : 4 7 : 0 2 ] A t t a c k e r d o e s N O T h a v e V e h i c l e A ' s p r i v a t e k e y
+[ 1 0 : 4 7 : 0 2 ] R E S U L T : C a n n o t f o r g e R E S P O N S E - > A u t h e n t i c a t i o n f a i l s
+C O N C L U S I O N :
+[ [ O K ] ] X . 5 0 9 c e r t i f i c a t e s t i e d t o C A - v e r i f i e d i d e n t i t i e s
+[ [ O K ] ] C h a l l e n g e - r e s p o n s e p r o v e s p r i v a t e k e y o w n e r s h i p
+69 Be ginner's Guide
+
+=== PAGE 72 ===
+CHAPTER 17. STEP 8  A TT A CK DEMONSTRA TION SCRIPTS V2V Comm unication Securit y
+[ [ O K ] ] C e r t i f i c a t e r e p l a c e m e n t d e t e c t e d b y C A s i g n a t u r e c h e c k
+Listing 17.3: Exp ected MitM attac k output
+70 Be ginner's Guide
+
+=== PAGE 73 ===
+Chapter 18
+Step 9  T esting Guide
+18.1 Running the F ull Demo
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S T E P 0 : S e t u p ( d o o n c e )
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+c d v 2 v _ s e c u r i t y
+s o u r c e v e n v / b i n / a c t i v a t e
+p y t h o n c a / c a . p y # G e n e r a t e C A
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - a - - o u t p u t - d i r c a / c e r t s
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - b - - o u t p u t - d i r c a / c e r t s
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S T E P 1 : T e r m i n a l 1 - - - S t a r t V e h i c l e A ( s e r v e r + d a s h b o a r d )
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - a \
+- - p o r t 9 0 0 1 \
+- - c e r t c a / c e r t s / v e h i c l e _ a _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ a _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m \
+- - d a s h b o a r d - p o r t 5 0 0 1
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S T E P 2 : T e r m i n a l 2 - - - S t a r t V e h i c l e B ( c o n n e c t t o A )
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - b \
+- - p o r t 9 0 0 2 \
+- - c e r t c a / c e r t s / v e h i c l e _ b _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ b _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m \
+- - p e e r - h o s t 1 2 7 . 0 . 0 . 1 \
+- - p e e r - p o r t 9 0 0 1 \
+71
+
+=== PAGE 74 ===
+CHAPTER 18. STEP 9  TESTING GUIDE V2V Comm unication Securit y
+- - d a s h b o a r d - p o r t 5 0 0 2
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S T E P 3 : V i e w D a s h b o a r d s i n b r o w s e r
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# V e h i c l e A d a s h b o a r d : h t t p : / / l o c a l h o s t : 5 0 0 1
+# V e h i c l e B d a s h b o a r d : h t t p : / / l o c a l h o s t : 5 0 0 2
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S T E P 4 : T e r m i n a l 3 - - - R u n a t t a c k d e m o n s t r a t i o n s
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n a t t a c k s / r e p l a y _ a t t a c k . p y \
+- - v e h i c l e - a - p o r t 9 0 0 1 \
+- - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 \
+- - v e h i c l e - b - p o r t 9 0 0 2 \
+- - d e l a y 1 0
+p y t h o n a t t a c k s / t a m p e r _ a t t a c k . p y \
+- - l i s t e n - p o r t 9 0 0 3 \
+- - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 \
+- - v e h i c l e - b - p o r t 9 0 0 2
+p y t h o n a t t a c k s / m i t m _ a t t a c k . p y \
+- - l i s t e n - p o r t 9 0 0 4 \
+- - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 \
+- - v e h i c l e - b - p o r t 9 0 0 2
+Listing 18.1: Step-b y-step demo commands
+18.2 Exp ected Successful Authen tication Output
+[ 1 0 : 3 0 : 0 0 . 0 0 1 ] [ v e h i c l e - b ] I N F O : C o n n e c t i n g t o p e e r a t 1 2 7 . 0 . 0 . 1 : 9 0 0 1
+[ 1 0 : 3 0 : 0 0 . 0 1 2 ] [ v e h i c l e - b ] I N F O : T C P c o n n e c t i o n e s t a b l i s h e d
+[ 1 0 : 3 0 : 0 0 . 0 1 3 ] [ v e h i c l e - b ] I N F O : S e n d i n g H E L L O { n o n c e = a 3 f 2 . . . , t s = 1 0 : 3 0 : 0 0 . 0 1 3 }
+[ 1 0 : 3 0 : 0 0 . 0 2 1 ] [ v e h i c l e - a ] I N F O : R e c e i v e d H E L L O f r o m v e h i c l e - b
+[ 1 0 : 3 0 : 0 0 . 0 2 2 ] [ v e h i c l e - a ] I N F O : V e r i f y i n g v e h i c l e - b c e r t i f i c a t e . . .
+[ 1 0 : 3 0 : 0 0 . 0 2 5 ] [ v e h i c l e - a ] I N F O : C e r t i f i c a t e V A L I D ( C N = v e h i c l e - b , e x p = 2 0 2 5 - 0 1 - 0 1 )
+[ 1 0 : 3 0 : 0 0 . 0 2 6 ] [ v e h i c l e - a ] I N F O : S e n d i n g C H A L L E N G E { n o n c e = b 4 g 3 . . . , s i g n e d _ n o n c e s
+= . . . }
+[ 1 0 : 3 0 : 0 0 . 0 3 4 ] [ v e h i c l e - b ] I N F O : R e c e i v e d C H A L L E N G E f r o m v e h i c l e - a
+[ 1 0 : 3 0 : 0 0 . 0 3 5 ] [ v e h i c l e - b ] I N F O : V e r i f y i n g v e h i c l e - a c e r t i f i c a t e . . .
+[ 1 0 : 3 0 : 0 0 . 0 3 8 ] [ v e h i c l e - b ] I N F O : C e r t i f i c a t e V A L I D ( C N = v e h i c l e - a , e x p = 2 0 2 5 - 0 1 - 0 1 )
+[ 1 0 : 3 0 : 0 0 . 0 3 9 ] [ v e h i c l e - b ] I N F O : C h a l l e n g e s i g n a t u r e v e r i f i e d O K
+[ 1 0 : 3 0 : 0 0 . 0 4 0 ] [ v e h i c l e - b ] I N F O : S e n d i n g R E S P O N S E { e c d h _ p u b k e y = . . . }
+[ 1 0 : 3 0 : 0 0 . 0 4 8 ] [ v e h i c l e - a ] I N F O : R e c e i v e d R E S P O N S E f r o m v e h i c l e - b
+[ 1 0 : 3 0 : 0 0 . 0 4 9 ] [ v e h i c l e - a ] I N F O : R e s p o n s e s i g n a t u r e v e r i f i e d O K
+[ 1 0 : 3 0 : 0 0 . 0 5 0 ] [ v e h i c l e - a ] I N F O : C o m p u t i n g E C D H s h a r e d s e c r e t . . .
+[ 1 0 : 3 0 : 0 0 . 0 5 1 ] [ v e h i c l e - a ] I N F O : D e r i v i n g s e s s i o n k e y ( H K D F - S H A 2 5 6 ) . . .
+[ 1 0 : 3 0 : 0 0 . 0 5 2 ] [ v e h i c l e - a ] I N F O : S e n d i n g A C K { e c d h _ p u b k e y = . . . }
+[ 1 0 : 3 0 : 0 0 . 0 6 0 ] [ v e h i c l e - b ] I N F O : R e c e i v e d A C K
+72 Be ginner's Guide
+
+=== PAGE 75 ===
+CHAPTER 18. STEP 9  TESTING GUIDE V2V Comm unication Securit y
+[ 1 0 : 3 0 : 0 0 . 0 6 1 ] [ v e h i c l e - b ] I N F O : C o m p u t i n g E C D H s h a r e d s e c r e t . . .
+[ 1 0 : 3 0 : 0 0 . 0 6 2 ] [ v e h i c l e - b ] I N F O : S e s s i o n k e y d e r i v e d . F o r w a r d s e c r e c y : E N A B L E D
+[ 1 0 : 3 0 : 0 0 . 0 6 3 ] [ v e h i c l e - b ] S U C C E S S : M U T U A L A U T H E N T I C A T I O N C O M P L E T E ( 6 2 m s )
+[ 1 0 : 3 0 : 0 0 . 0 6 4 ] [ v e h i c l e - a ] S U C C E S S : M U T U A L A U T H E N T I C A T I O N C O M P L E T E ( 6 2 m s )
+[ 1 0 : 3 0 : 0 1 . 0 0 1 ] [ v e h i c l e - a ] I N F O : B S M # 1 s e n t : s p e e d = 7 2 . 3 k m / h , h e a d i n g = 0 4 5 d e g
+[ 1 0 : 3 0 : 0 1 . 0 0 2 ] [ v e h i c l e - b ] I N F O : B S M # 1 r e c e i v e d : A U T H E N T I C A T E D | E N C R Y P T E D | V E R I F I E D |
+R E P L A Y - P R O T E C T E D
+Listing 18.2: Exp ected authen tication log output
+18.3 Ev aluator Demo Script
+1. Start the CA and sho w the generated certicate le in PEM format. Explain:
+This is the trust anc hor  b oth v ehicles trust certicates signed b y this CA.
+2. Start V ehicle A and B. P oin t to the log sho wing the four-step handshak e with
+timings. Explain eac h step as it app ears.
+3. Op en b oth dash b oards. Sho w green authen ticated status, real-time BSMs
+app earing in the table, all four securit y prop ert y c hec kmarks.
+4. Run the repla y attac k. Sho w the REJECTED message in b oth the terminal
+and the ashing alert panel in the dash b oard.
+5. Run the tamp er attac k. Sho w the AES-GCM authen tication tag failure.
+6. Run the MitM attac k. Sho w the CA signature v erication failure.
+7. Run the ev aluation script (see Step 19) and displa y the securit y metrics table.
+73 Be ginner's Guide
+
+=== PAGE 76 ===
+74
+
+=== PAGE 77 ===
+CHAPTER 19. STEP 10  SECURITY EV ALUA TION METRICS V2V Comm unication Securit y
+Chapter 19
+Step 10  Security Ev aluation
+Metrics
+19.1 Measuremen t Metho dology
+T able 19.1: Securit y Ev aluation Metrics
+Metric Ho w to Mea-
+sureExp ected T o ol
+Auth latency time.perf_counter()
+around full hand-
+shak e< 200ms Python time
+Encrypt throughput Encrypt 10,000
+BSMs, measure
+total time> 5000/s timeit
+Decrypt throughput Decrypt same
+10,000 BSMs> 5000/s timeit
+Repla y detect rate Send 100 repla y ed
+msgs; coun t rejec-
+tions100% repla y_attac k.p y
+T amp er detect rate Send 100 tam-
+p ered msgs; coun t
+rejections100% tamp er_attac k.p y
+Cert v erify time V erify 1000 certs;
+a v erage time< 5ms Python time
+Nonce uniqueness Generate 106
+nonces; c hec k
+collisions0 collisions Python set
+F orw ard secrecy Chec k new ECDH
+k eys generated
+eac h sessionNew k eys eac h time Logging
+75 Be ginner's Guide
+
+=== PAGE 78 ===
+CHAPTER 19. STEP 10  SECURITY EV ALUA TION METRICS V2V Comm unication Securit y
+19.2 F ull Claude Co de Prompt  Ev aluation Script
+Claude Co de Prompt  ev aluate_securit y .p y
+C r e a t e ' t e s t s / e v a l u a t e _ s e c u r i t y . p y ' : a c o m p r e h e n s i v e s e c u r i t y
+e v a l u a t i o n s c r i p t .
+T h e s c r i p t m u s t :
+1 . A u t h e n t i c a t i o n L a t e n c y :
+- R u n 1 0 0 a u t h e n t i c a t i o n h a n d s h a k e s b e t w e e n t w o i n - p r o c e s s
+V e h i c l e N o d e i n s t a n c e s
+- R e c o r d e a c h h a n d s h a k e d u r a t i o n i n m i l l i s e c o n d s
+- R e p o r t : m i n , m a x , m e a n , m e d i a n , p 9 5 , p 9 9 , s t d d e v i a t i o n
+2 . C r y p t o T h r o u g h p u t :
+- G e n e r a t e 1 0 , 0 0 0 B S M s
+- B e n c h m a r k : a e s _ g c m _ e n c r y p t ( o p s / s e c o n d a n d M B / s )
+- B e n c h m a r k : a e s _ g c m _ d e c r y p t ( o p s / s e c o n d a n d M B / s )
+- B e n c h m a r k : e c d s a _ s i g n ( o p s / s e c o n d )
+- B e n c h m a r k : e c d s a _ v e r i f y ( o p s / s e c o n d )
+- B e n c h m a r k : h m a c _ c o m p u t e ( o p s / s e c o n d )
+3 . R e p l a y D e t e c t i o n R a t e :
+- C r e a t e 1 0 0 v a l i d S e c u r e B S M s w i t h u n i q u e n o n c e s
+- A t t e m p t t o r e p l a y e a c h o n e a f t e r 6 s e c o n d s
+- R e p o r t : X / 1 0 0 r e p l a y s c o r r e c t l y r e j e c t e d
+- A l s o t e s t : 0 - s e c o n d r e p l a y ( n o n c e c a c h e h i t )
+4 . T a m p e r D e t e c t i o n R a t e :
+- C r e a t e 1 0 0 v a l i d S e c u r e B S M s
+- F l i p 1 , 2 , a n d 5 r a n d o m b i t s i n e a c h
+- A t t e m p t t o d e c r y p t e a c h
+- R e p o r t : X / 1 0 0 t a m p e r e d m e s s a g e s c o r r e c t l y d e t e c t e d p e r b i t -
+f l i p l e v e l
+5 . C e r t i f i c a t e V e r i f i c a t i o n T i m e :
+- V e r i f y t h e s a m e c e r t i f i c a t e 1 0 0 0 t i m e s
+- R e p o r t : m e a n a n d p 9 9
+6 . N o n c e U n i q u e n e s s :
+- G e n e r a t e 1 , 0 0 0 , 0 0 0 n o n c e s u s i n g o s . u r a n d o m ( 3 2 )
+- C h e c k f o r a n y d u p l i c a t e s
+- R e p o r t : 0 c o l l i s i o n s e x p e c t e d
+7 . F o r w a r d S e c r e c y C h e c k :
+- R u n 1 0 s e s s i o n s
+76 Be ginner's Guide
+
+=== PAGE 79 ===
+CHAPTER 19. STEP 10  SECURITY EV ALUA TION METRICS V2V Comm unication Securit y
+- V e r i f y e a c h s e s s i o n u s e s a D I F F E R E N T e p h e m e r a l E C D H k e y
+p a i r
+- V e r i f y s e s s i o n k e y s a r e a l l d i f f e r e n t
+O u t p u t a f o r m a t t e d r e p o r t t a b l e t o s t d o u t A N D s a v e a s '
+s e c u r i t y _ r e p o r t . t x t ' .
+I n c l u d e P A S S / F A I L / W A R N f o r e a c h m e t r i c b a s e d o n t h r e s h o l d s .
+77 Be ginner's Guide
+
+=== PAGE 80 ===
+Chapter 20
+Step 11  MQTT Network Setup
+20.1 Theory: MQTT vs TCP So c k ets
+T able 20.1: MQTT vs TCP So c k ets for V2V Sim ulation
+Asp ect TCP So c k ets MQTT
+Connection mo del P oin t-to-p oin t (1-to-1) Pub/sub (1-to-man y)
+Scalabilit y New connection p er v ehicle One brok er, man y v ehicles
+Infrastructure None needed MQTT brok er required
+V2V realism Lo w (V2V is broadcast) Higher (V2V is broadcast)
+Complexit y Simpler co de Sligh tly more setup
+Use for T w o-v ehicle tests Multi-v ehicle sim ulations
+20.2 MQTT Setup
+# I n s t a l l M o s q u i t t o ( L i n u x )
+s u d o a p t - g e t i n s t a l l m o s q u i t t o m o s q u i t t o - c l i e n t s
+# S t a r t M o s q u i t t o b r o k e r
+m o s q u i t t o - v # v e r b o s e m o d e f o r d e b u g g i n g
+# D e f a u l t : l i s t e n s o n l o c a l h o s t : 1 8 8 3
+# T e s t M Q T T w i t h o u t o u r c o d e :
+# T e r m i n a l A : s u b s c r i b e
+m o s q u i t t o _ s u b - h l o c a l h o s t - t " v 2 v / # " - v
+# T e r m i n a l B : p u b l i s h t e s t m e s s a g e
+m o s q u i t t o _ p u b - h l o c a l h o s t - t " v 2 v / v e h i c l e - a / b s m " \
+- m ' { " t e s t " : " h e l l o f r o m V e h i c l e A " } '
+78
+
+=== PAGE 81 ===
+CHAPTER 20. STEP 11  MQTT NETW ORK SETUP V2V Comm unication Securit y
+# Y o u s h o u l d s e e t h e m e s s a g e a p p e a r i n T e r m i n a l A i n s t a n t l y
+Listing 20.1: Install and congure Mosquitto MQTT brok er
+20.3 F ull Claude Co de Prompt  MQTT V ehicle
+No de V arian t
+Claude Co de Prompt  v ehicle_no de_mqtt.p y
+C r e a t e ' n o d e / v e h i c l e _ n o d e _ m q t t . p y ' : a d a p t v e h i c l e _ n o d e . p y t o u s e
+M Q T T .
+U s e p a h o - m q t t l i b r a r y . I m p l e m e n t c l a s s M Q T T V e h i c l e N o d e w i t h s a m e
+i n t e r f a c e
+a s V e h i c l e N o d e b u t u s i n g M Q T T f o r t r a n s p o r t :
+T o p i c s :
+P u b l i s h B S M s t o : v 2 v / { v e h i c l e _ i d } / b s m
+S u b s c r i b e t o B S M s o n : v 2 v / + / b s m ( w i l d c a r d , a l l v e h i c l e s )
+A u t h m e s s a g e s : v 2 v / { v e h i c l e _ i d } / a u t h
+A l e r t s : v 2 v / a l e r t s
+A u t h e n t i c a t i o n v i a M Q T T :
+- A u t h s t i l l h a p p e n s i n a s e p a r a t e T C P h a n d s h a k e ( u s e t h e
+e x i s t i n g a u t h _ p r o t o c o l . p y )
+- A f t e r a u t h e n t i c a t i o n e s t a b l i s h e s s e s s i o n _ k e y , u s e M Q T T f o r
+B S M e x c h a n g e
+- A u t h h a n d s h a k e T C P p o r t = M Q T T b r o k e r p o r t + 1 0 0
+M Q T T c a l l b a c k s :
+o n _ c o n n e c t : s u b s c r i b e t o t o p i c s , l o g c o n n e c t i o n
+o n _ m e s s a g e : d e s e r i a l i z e , c a l l s e c u r e _ r e c e i v e , l o g
+o n _ d i s c o n n e c t : l o g , a t t e m p t r e c o n n e c t w i t h b a c k o f f
+B S M p u b l i s h i n g :
+- P u b l i s h S e c u r e B S M b y t e s a s p a y l o a d ( b i n a r y )
+- Q o S l e v e l 1 ( a t l e a s t o n c e d e l i v e r y )
+- r e t a i n = F a l s e ( B S M s a r e e p h e m e r a l )
+a r g p a r s e : - - b r o k e r - h o s t ( d e f a u l t l o c a l h o s t ) , - - b r o k e r - p o r t (
+d e f a u l t 1 8 8 3 ) ,
+- - v e h i c l e - i d , - - c e r t , - - k e y , - - c a - c e r t
+79 Be ginner's Guide
+
+=== PAGE 82 ===
+Chapter 21
+Step 12  Docker Setup
+21.1 Theory: What Do c k er Pro vides
+Key Concept
+Do c k er pac k ages an application and all its dep endencies in to a con tainer 
+an isolated, repro ducible en vironmen t. Benets:
+ Consisten t b eha viour across mac hines (w orks on m y mac hine solv ed)
+ Easy m ulti-no de sim ulation on one laptop
+ Repro ducible for ev aluators: docker compose up runs ev erything
+Do c k er Comp ose orc hestrates m ultiple con tainers, dening whic h con tainers
+exist, ho w they connect, and what en vironmen t v ariables they receiv e.
+21.2 Do c k erle
+1 # - - - - D o c k e r f i l e f o r V 2 V V e h i c l e N o d e - - - -
+2 # s y n t a x = d o c k e r / d o c k e r f i l e : 1
+3
+4 # S t a r t f r o m o f f i c i a l P y t h o n 3 . 1 1 s l i m i m a g e
+5 # " s l i m " = s m a l l e r i m a g e , o n l y e s s e n t i a l p a c k a g e s
+6 F R O M p y t h o n : 3 . 1 1 - s l i m
+7
+8 # S e t w o r k i n g d i r e c t o r y i n s i d e t h e c o n t a i n e r
+9 # A l l s u b s e q u e n t c o m m a n d s r u n f r o m h e r e
+10 W O R K D I R / a p p
+11
+12 # C o p y r e q u i r e m e n t s f i r s t ( D o c k e r l a y e r c a c h i n g o p t i m i s a t i o n )
+13 # I f r e q u i r e m e n t s . t x t h a s n ' t c h a n g e d , D o c k e r r e u s e s c a c h e d l a y e r
+14 # T h i s a v o i d s r e - d o w n l o a d i n g p a c k a g e s o n e v e r y c o d e c h a n g e
+15 C O P Y r e q u i r e m e n t s . t x t .
+16
+80
+
+=== PAGE 83 ===
+CHAPTER 21. STEP 12  DOCKER SETUP V2V Comm unication Securit y
+17 # I n s t a l l P y t h o n d e p e n d e n c i e s
+18 # - - n o - c a c h e - d i r : d o n ' t s t o r e p i p c a c h e ( k e e p s i m a g e s m a l l e r )
+19 R U N p i p i n s t a l l - - n o - c a c h e - d i r - r r e q u i r e m e n t s . t x t
+20
+21 # C o p y t h e r e s t o f t h e p r o j e c t c o d e
+22 # T h i s l a y e r c h a n g e s e v e r y t i m e c o d e c h a n g e s ( a s e x p e c t e d )
+23 C O P Y . .
+24
+25 # T h e c o n t a i n e r w i l l r u n a s v e h i c l e _ n o d e . p y b y d e f a u l t
+26 # A r g u m e n t s a r e p a s s e d v i a d o c k e r - c o m p o s e . y m l e n v i r o n m e n t / c o m m a n d
+27 E N T R Y P O I N T [ " p y t h o n " , " n o d e / v e h i c l e _ n o d e . p y " ]
+28
+29 # D o c u m e n t w h i c h p o r t s t h i s c o n t a i n e r u s e s ( d o c u m e n t a t i o n o n l y )
+30 # A c t u a l p o r t m a p p i n g i s i n d o c k e r - c o m p o s e . y m l
+31 E X P O S E 9 0 0 1 9 0 0 2 5 0 0 0
+Listing 21.1: Do c k erle  annotated line b y line
+21.3 do c k er-comp ose.yml
+1 # d o c k e r - c o m p o s e . y m l
+2 v e r s i o n : ' 3 . 9 '
+3
+4 # D e f i n e t h e s h a r e d n e t w o r k a l l c o n t a i n e r s u s e
+5 n e t w o r k s :
+6 v 2 v - n e t :
+7 d r i v e r : b r i d g e # S t a n d a r d D o c k e r b r i d g e n e t w o r k
+8
+9 s e r v i c e s :
+10 # - - - - C e r t i f i c a t e A u t h o r i t y ( r u n s f i r s t , i s s u e s c e r t s t o
+v e h i c l e s ) - - - -
+11 c a - s e r v e r :
+12 b u i l d : .
+13 e n t r y p o i n t : [ " p y t h o n " , " c a / c a . p y " , " - - o u t p u t - d i r " , " / c e r t s " ]
+14 v o l u m e s :
+15 - . / c a / c e r t s : / c e r t s # M o u n t h o s t c e r t s f o l d e r i n t o
+c o n t a i n e r
+16 n e t w o r k s : [ v 2 v - n e t ]
+17
+18 # - - - - V e h i c l e A - - - -
+19 v e h i c l e - a :
+20 b u i l d : .
+21 c o m m a n d :
+22 - " - - v e h i c l e - i d = v e h i c l e - a "
+23 - " - - p o r t = 9 0 0 1 "
+24 - " - - c e r t = / c e r t s / v e h i c l e _ a _ c e r t . p e m "
+81 Be ginner's Guide
+
+=== PAGE 84 ===
+CHAPTER 21. STEP 12  DOCKER SETUP V2V Comm unication Securit y
+25 - " - - k e y = / c e r t s / v e h i c l e _ a _ k e y . p e m "
+26 - " - - c a - c e r t = / c e r t s / c a _ c e r t . p e m "
+27 - " - - d a s h b o a r d - p o r t = 5 0 0 1 "
+28 v o l u m e s :
+29 - . / c a / c e r t s : / c e r t s # S h a r e d c e r t s v o l u m e
+30 p o r t s :
+31 - " 9 0 0 1 : 9 0 0 1 " # V e h i c l e A n o d e p o r t ( h o s t : c o n t a i n e r )
+32 - " 5 0 0 1 : 5 0 0 1 " # V e h i c l e A d a s h b o a r d
+33 n e t w o r k s : [ v 2 v - n e t ]
+34 d e p e n d s _ o n : [ c a - s e r v e r ]
+35
+36 # - - - - V e h i c l e B - - - -
+37 v e h i c l e - b :
+38 b u i l d : .
+39 c o m m a n d :
+40 - " - - v e h i c l e - i d = v e h i c l e - b "
+41 - " - - p o r t = 9 0 0 2 "
+42 - " - - c e r t = / c e r t s / v e h i c l e _ b _ c e r t . p e m "
+43 - " - - k e y = / c e r t s / v e h i c l e _ b _ k e y . p e m "
+44 - " - - c a - c e r t = / c e r t s / c a _ c e r t . p e m "
+45 - " - - p e e r - h o s t = v e h i c l e - a " # U s e c o n t a i n e r n a m e a s h o s t n a m e
+46 - " - - p e e r - p o r t = 9 0 0 1 "
+47 - " - - d a s h b o a r d - p o r t = 5 0 0 2 "
+48 v o l u m e s :
+49 - . / c a / c e r t s : / c e r t s
+50 p o r t s :
+51 - " 9 0 0 2 : 9 0 0 2 "
+52 - " 5 0 0 2 : 5 0 0 2 "
+53 n e t w o r k s : [ v 2 v - n e t ]
+54 d e p e n d s _ o n : [ v e h i c l e - a ] # W a i t f o r V e h i c l e A t o s t a r t
+55
+56 # - - - - M o s q u i t t o M Q T T B r o k e r - - - -
+57 m o s q u i t t o :
+58 i m a g e : e c l i p s e - m o s q u i t t o : 2 . 0 # O f f i c i a l M o s q u i t t o i m a g e
+59 p o r t s :
+60 - " 1 8 8 3 : 1 8 8 3 "
+61 n e t w o r k s : [ v 2 v - n e t ]
+62 v o l u m e s :
+63 - . / d o c k e r / m o s q u i t t o . c o n f : / m o s q u i t t o / c o n f i g / m o s q u i t t o . c o n f
+Listing 21.2: do c k er-comp ose.yml  m ulti-con tainer V2V sim ulation
+21.4 Do c k er Commands
+# B u i l d a l l i m a g e s
+d o c k e r c o m p o s e b u i l d
+82 Be ginner's Guide
+
+=== PAGE 85 ===
+CHAPTER 21. STEP 12  DOCKER SETUP V2V Comm unication Securit y
+# S t a r t a l l c o n t a i n e r s i n b a c k g r o u n d
+d o c k e r c o m p o s e u p - d
+# V i e w l o g s f r o m a l l c o n t a i n e r s ( C t r l + C t o s t o p f o l l o w i n g )
+d o c k e r c o m p o s e l o g s - f
+# V i e w l o g s f r o m o n e c o n t a i n e r o n l y
+d o c k e r c o m p o s e l o g s v e h i c l e - a - f
+# C h e c k c o n t a i n e r s t a t u s
+d o c k e r c o m p o s e p s
+# S t o p a l l c o n t a i n e r s
+d o c k e r c o m p o s e d o w n
+# S t o p a n d r e m o v e v o l u m e s ( c l e a n s l a t e )
+d o c k e r c o m p o s e d o w n - v
+# O p e n a s h e l l i n s i d e a r u n n i n g c o n t a i n e r ( f o r d e b u g g i n g )
+d o c k e r c o m p o s e e x e c v e h i c l e - a / b i n / b a s h
+Listing 21.3: Do c k er build and run commands
+83 Be ginner's Guide
+
+=== PAGE 86 ===
+Chapter 22
+Step 13  T wo-Laptop Setup Guide
+22.1 Net w ork Conguration
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# P R E R E Q U I S I T E : B o t h l a p t o p s o n s a m e n e t w o r k ( L A N o r h o t s p o t )
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# - - - O n L A P T O P A ( 1 9 2 . 1 6 8 . 1 . 1 0 0 ) - - -
+# S t e p 1 : F i n d y o u r I P a d d r e s s
+h o s t n a m e - I | a w k ' { p r i n t $ 1 } '
+# S h o u l d s h o w : 1 9 2 . 1 6 8 . 1 . 1 0 0 ( y o u r a c t u a l I P w i l l d i f f e r )
+# S t e p 2 : O p e n f i r e w a l l p o r t s ( U b u n t u / D e b i a n w i t h u f w )
+s u d o u f w a l l o w 9 0 0 1 / t c p c o m m e n t " V 2 V V e h i c l e A "
+s u d o u f w a l l o w 5 0 0 1 / t c p c o m m e n t " V e h i c l e A D a s h b o a r d "
+s u d o u f w r e l o a d
+s u d o u f w s t a t u s
+# S t e p 3 : G e n e r a t e c e r t i f i c a t e s ( d o n e o n L a p t o p A o n l y )
+c d v 2 v _ s e c u r i t y
+p y t h o n c a / c a . p y
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - a - - o u t p u t - d i r c a / c e r t s
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - b - - o u t p u t - d i r c a / c e r t s
+# S t e p 4 : C o p y V e h i c l e B c e r t s t o L a p t o p B ( r e p l a c e 1 9 2 . 1 6 8 . 1 . 1 0 1
+w i t h B ' s I P )
+s c p c a / c e r t s / c a _ c e r t . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y /
+c a / c e r t s /
+s c p c a / c e r t s / v e h i c l e _ b _ c e r t . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y /
+c a / c e r t s /
+s c p c a / c e r t s / v e h i c l e _ b _ k e y . p e m u s e r @ 1 9 2 . 1 6 8 . 1 . 1 0 1 : ~ / v 2 v _ s e c u r i t y /
+c a / c e r t s /
+84
+
+=== PAGE 87 ===
+CHAPTER 22. STEP 13  TW O-LAPTOP SETUP GUIDE V2V Comm unication Securit y
+# S t e p 5 : S t a r t V e h i c l e A ( w a i t f o r c o n n e c t i o n f r o m B )
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - a \
+- - p o r t 9 0 0 1 \
+- - c e r t c a / c e r t s / v e h i c l e _ a _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ a _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m \
+- - d a s h b o a r d - p o r t 5 0 0 1
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# - - - O n L A P T O P B ( 1 9 2 . 1 6 8 . 1 . 1 0 1 ) - - -
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S t e p 1 : O p e n f i r e w a l l p o r t s
+s u d o u f w a l l o w 9 0 0 2 / t c p c o m m e n t " V 2 V V e h i c l e B "
+s u d o u f w a l l o w 5 0 0 2 / t c p c o m m e n t " V e h i c l e B D a s h b o a r d "
+# S t e p 2 : S t a r t V e h i c l e B ( c o n n e c t s t o L a p t o p A )
+p y t h o n n o d e / v e h i c l e _ n o d e . p y \
+- - v e h i c l e - i d v e h i c l e - b \
+- - p o r t 9 0 0 2 \
+- - c e r t c a / c e r t s / v e h i c l e _ b _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ b _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m \
+- - p e e r - h o s t 1 9 2 . 1 6 8 . 1 . 1 0 0 \ # L a p t o p A ' s I P a d d r e s s
+- - p e e r - p o r t 9 0 0 1 \
+- - d a s h b o a r d - p o r t 5 0 0 2
+Listing 22.1: Complete t w o-laptop setup guide
+85 Be ginner's Guide
+
+=== PAGE 88 ===
+CHAPTER 22. STEP 13  TW O-LAPTOP SETUP GUIDE V2V Comm unication Securit y
+22.2 T roublesho oting Common Issues
+T able 22.1: Common Errors and Solutions
+Error Cause Fix
+Connection refused P ort not op en / wrong IP Chec k ufw status ; v er-
+ify IP with ip addr
+Certicate v erication failed W rong CA cert Ensure same
+ca_cert.pem on b oth
+laptops
+In v alid k ey for cert Cert/k ey mismatc h Regenerate with
+issue_cert.py
+A ddress already in use P ort tak en lsof -i :9001 then
+kill that PID
+Nonce repla y errors System clo c k sk ew sudo ntpdate
+pool.ntp.org on b oth
+laptops
+HMA C v erication failed W rong session k ey Chec k auth completed
+successfully b efore BSM
+exc hange
+86 Be ginner's Guide
+
+=== PAGE 89 ===
+Part IV
+Reference and Appendices
+87
+
+=== PAGE 90 ===
+Appendix A
+Glossary
+AES A dv anced Encryption Standard. A symmetric blo c k cipher stan-
+dardised b y NIST (FIPS 197). The most widely used encryption
+algorithm in the w orld.
+AES-GCM AES in Galois/Coun ter Mo de. Pro vides b oth encryption and au-
+then tication (AEAD  Authen ticated Encryption with Asso ciated
+Data).
+Authen tication The pro cess of v erifying that a part y is who it claims to b e.
+BSM Basic Safet y Message. Dened in SAE J2735. The standard data
+format for V2V safet y messages. Broadcast 10 times p er second.
+CA Certicate Authorit y . A trusted third part y that issues and signs
+digital certicates.
+CIA T riad Conden tialit y , In tegrit y , A v ailabilit y . The three core prop erties of
+information securit y .
+C-V2X Cellular V ehicle-to-Ev erything. V2V/V2X comm unication using
+cellular (L TE/5G) tec hnology .
+DSR C Dedicated Short-Range Comm unications. V2V comm unication
+standard based on IEEE 802.11p, op erating at 5.9 GHz.
+ECC Elliptic Curv e Cryptograph y . Public-k ey cryptograph y based on
+the algebraic structure of elliptic curv es. Pro vides equiv alen t secu-
+rit y to RSA with m uc h smaller k ey sizes.
+ECDH Elliptic Curv e Die-Hellman. A k ey agreemen t proto col that al-
+lo ws t w o parties to deriv e a shared secret o v er a public c hannel.
+ECDHE Elliptic Curv e Die-Hellman Ephemeral. ECDH with fresh k ey
+pairs p er session, pro viding forw ard secrecy .
+ECDSA Elliptic Curv e Digital Signature Algorithm. Used to create and
+v erify digital signatures.
+F orw ard Secrecy A prop ert y ensuring that compromise of a long-term k ey do es not
+compromise past session k eys. A c hiev ed via ECDHE.
+88
+
+=== PAGE 91 ===
+APPENDIX A. GLOSSAR Y V2V Comm unication Securit y
+HKDF HMA C-based Key Deriv ation F unction. T ak es a shared secret and
+deriv es one or more cryptographic k eys.
+HMA C Hash-based Message Authen tication Co de. Pro vides b oth in tegrit y
+and authen tication using a shared secret k ey .
+IEEE 1609.2 The IEEE standard dening securit y services for wireless comm uni-
+cations in DSR C-based V2X systems. Sp ecies certicate formats,
+signature algorithms, and trust managemen t.
+Man-in-the-Middle (MitM) An attac k where an adv ersary secretly rela ys (and p os-
+sibly mo dies) comm unications b et w een t w o parties who b eliev e
+they are comm unicating directly .
+MQTT Message Queuing T elemetry T ransp ort. A ligh t w eigh t publish/-
+subscrib e messaging proto col designed for IoT and M2M comm u-
+nication.
+Non-repudiation The guaran tee that a part y cannot den y ha ving p erformed an ac-
+tion (e.g., sending a message). A c hiev ed with digital signatures.
+Nonce Num b er Used Once. A random v alue that ma y only app ear once
+in a cryptographic proto col, prev en ting repla y attac ks.
+PEM Priv acy Enhanced Mail. A Base64-enco ded format for storing
+cryptographic k eys and certicates.
+PKI Public Key Infrastructure. A framew ork of hardw are, soft w are,
+p olicies, and pro cedures for managing digital certicates and
+public-k ey encryption.
+Pseudon ymous Certicate A digital certicate that iden ties a v ehicle b y a tem-
+p orary , unlink able pseudon ym rather than a real iden tier.
+Repla y A ttac k An attac k where a v alid message is captured and retransmitted at
+a later time to ac hiev e a malicious eect.
+RSA Riv estShamirA dleman. A public-k ey cryptosystem based on the
+dicult y of factoring large in tegers.
+SAE J2735 SAE In ternational standard dening the message set (including
+BSMs) for V2V/V2X comm unication.
+Session Key A short-liv ed symmetric k ey used for the duration of one comm u-
+nication session.
+SHA-256 Secure Hash Algorithm 256-bit. A cryptographic hash function
+pro ducing a 256-bit digest. P art of the SHA-2 family (FIPS 180-
+4).
+Sybil A ttac k An attac k where a single adv ersary creates m ultiple fak e iden tities
+to gain disprop ortionate inuence in a distributed net w ork.
+TLS T ransp ort La y er Securit y . The cryptographic proto col pro viding
+securit y o v er the in ternet (used in HTTPS). Our V2V proto col
+89 Be ginner's Guide
+
+=== PAGE 92 ===
+APPENDIX A. GLOSSAR Y V2V Comm unication Securit y
+implemen ts similar concepts at the application la y er.
+V2V V ehicle-to-V ehicle comm unication. Direct wireless comm unication
+b et w een nearb y v ehicles without infrastructure.
+V ANET V ehicular A d Ho c Net w ork. A net w ork formed b y v ehicles and
+roadside infrastructure, comm unicating wirelessly without xed
+top ology .
+X.509 An ITU-T standard dening the format of public-k ey certicates.
+The basis of PKI on the in ternet and in V2V systems.
+90 Be ginner's Guide
+
+=== PAGE 93 ===
+Appendix B
+Standards References
+T able B.1: Key V2V Securit y Standards
+Standard Bo dy Description
+IEEE 802.11p IEEE W A VE (Wireless A ccess in V ehicular En vironmen ts)
+ the radio la y er for DSR C
+IEEE 1609.2 IEEE Securit y services for DSR C: certicate format, signing,
+v erication
+IEEE 1609.3 IEEE W A VE Short Message Proto col (WSMP) net w orking
+la y er
+SAE J2735 SAE V2X message set dictionary including BSM format
+SAE J2945 SAE Minim um p erformance requiremen ts for V2V safet y
+systems
+ETSI EN 302 637 ETSI Europ ean V2X: Co op erativ e A w areness Message
+(CAM) standard
+ETSI TS 103 097 ETSI Europ ean V2X securit y header and certicate formats
+3GPP TS 33.185 3GPP Securit y asp ects of Mission Critical Comm unications
+(L TE-V2X)
+NIST FIPS 186-4 NIST Digital Signature Standard (DSS)  sp ecies ECDSA
+NIST FIPS 197 NIST A dv anced Encryption Standard (AES)
+NIST SP 800-56A NIST Recommendation for P air-Wise Key Establishmen t
+(ECDH)
+NIST SP 800-131A NIST T ransitions: Recommendation for T ransitioning Cryp-
+tographic Algorithms
+91
+
+=== PAGE 94 ===
+Appendix C
+F urther Reading
+1. IEEE 1609.2 sp ecication: https://standards.ieee.org/ieee/1609.2/
+7443/
+2. PyCA cryptograph y do cumen tation: https://cryptography.io/en/
+latest/
+3. SAE J2735 standard o v erview: https://www.sae.org/standards/
+content/j2735_202309/
+4. US DOT V2V safet y pilot programme: https://www.transportation.
+gov/av/v2x
+5. ETSI ITS standards p ortal: https://www.etsi.org/technologies/
+automotive- intelligent- transport
+6. Securit y and Priv acy in V2X Comm unications surv ey: https://
+arxiv.org/abs/2003.11082
+7. Eclipse Mosquitto MQTT brok er do cs: https://mosquitto.org/
+documentation/
+8. Flask do cumen tation: https://flask.palletsprojects.com/
+9. NIST p ost-quan tum cryptograph y (future-pro ong): https://csrc.
+nist.gov/projects/post- quantum- cryptography
+10. SCMS (Securit y Creden tial Managemen t System)  US V2X PKI:
+https://www.its.dot.gov/research_areas/cybersecurity/htm/scms.htm
+11. V2X Cyb er Threat Analysis (ENISA re-
+p ort): https://www.enisa.europa.eu/publications/
+enisa- threat- landscape- for- connected- and- automated- mobility- systems- and- services
+12. Cryptograph y Engineering (Bo ok) b y F erguson, Sc hneier, K ohno:
+https://www.schneier.com/books/cryptography_engineering/
+92
+
+=== PAGE 95 ===
+Appendix D
+Quick-Reference Command Cheat
+Sheet
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S E T U P
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+c d v 2 v _ s e c u r i t y & & s o u r c e v e n v / b i n / a c t i v a t e
+p i p i n s t a l l - r r e q u i r e m e n t s . t x t
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# C E R T I F I C A T E A U T H O R I T Y
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n c a / c a . p y # C r e a t e r o o t C A
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - a \
+- - o u t p u t - d i r c a / c e r t s # I s s u e c e r t t o
+V e h i c l e A
+p y t h o n c a / i s s u e _ c e r t . p y - - v e h i c l e - i d v e h i c l e - b \
+- - o u t p u t - d i r c a / c e r t s # I s s u e c e r t t o
+V e h i c l e B
+p y t h o n c a / v e r i f y _ c e r t . p y \
+- - c e r t c a / c e r t s / v e h i c l e _ a _ c e r t . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m # V e r i f y a
+c e r t i f i c a t e
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# R U N N I N G V E H I C L E S ( s a m e m a c h i n e )
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# T e r m i n a l 1 ( V e h i c l e A )
+p y t h o n n o d e / v e h i c l e _ n o d e . p y - - v e h i c l e - i d v e h i c l e - a \
+- - p o r t 9 0 0 1 - - c e r t c a / c e r t s / v e h i c l e _ a _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ a _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m - - d a s h b o a r d - p o r t 5 0 0 1
+# T e r m i n a l 2 ( V e h i c l e B )
+93
+
+=== PAGE 96 ===
+APPENDIX D. QUICK-REFERENCE COMMAND CHEA T SHEET V2V Comm unication Securit y
+p y t h o n n o d e / v e h i c l e _ n o d e . p y - - v e h i c l e - i d v e h i c l e - b \
+- - p o r t 9 0 0 2 - - c e r t c a / c e r t s / v e h i c l e _ b _ c e r t . p e m \
+- - k e y c a / c e r t s / v e h i c l e _ b _ k e y . p e m \
+- - c a - c e r t c a / c e r t s / c a _ c e r t . p e m \
+- - p e e r - h o s t 1 2 7 . 0 . 0 . 1 - - p e e r - p o r t 9 0 0 1 - - d a s h b o a r d - p o r t 5 0 0 2
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# D A S H B O A R D S
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# h t t p : / / l o c a l h o s t : 5 0 0 1 V e h i c l e A d a s h b o a r d
+# h t t p : / / l o c a l h o s t : 5 0 0 2 V e h i c l e B d a s h b o a r d
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# A T T A C K D E M O N S T R A T I O N S
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n a t t a c k s / r e p l a y _ a t t a c k . p y \
+- - v e h i c l e - a - p o r t 9 0 0 1 - - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 \
+- - v e h i c l e - b - p o r t 9 0 0 2 - - d e l a y 1 0
+p y t h o n a t t a c k s / t a m p e r _ a t t a c k . p y \
+- - l i s t e n - p o r t 9 0 0 3 - - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 - - v e h i c l e - b - p o r t
+9 0 0 2
+p y t h o n a t t a c k s / m i t m _ a t t a c k . p y \
+- - l i s t e n - p o r t 9 0 0 4 - - v e h i c l e - b - h o s t 1 2 7 . 0 . 0 . 1 - - v e h i c l e - b - p o r t
+9 0 0 2
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# S E C U R I T Y E V A L U A T I O N
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+p y t h o n t e s t s / e v a l u a t e _ s e c u r i t y . p y # F u l l s e c u r i t y
+r e p o r t
+p y t e s t t e s t s / - v - - c o v = . - - c o v - r e p o r t = h t m l # R u n a l l t e s t s
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# D O C K E R
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+d o c k e r c o m p o s e b u i l d
+d o c k e r c o m p o s e u p - d
+d o c k e r c o m p o s e l o g s - f
+d o c k e r c o m p o s e d o w n
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# M Q T T T E S T I N G
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+m o s q u i t t o - v # S t a r t b r o k e r
+m o s q u i t t o _ s u b - h l o c a l h o s t - t " v 2 v / # " - v # M o n i t o r a l l
+t o p i c s
+m o s q u i t t o _ p u b - h l o c a l h o s t - t " v 2 v / t e s t " - m " h e l l o " # T e s t p u b l i s h
+94 Be ginner's Guide
+
+=== PAGE 97 ===
+APPENDIX D. QUICK-REFERENCE COMMAND CHEA T SHEET V2V Comm unication Securit y
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# T W O - L A P T O P : F I R E W A L L
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+s u d o u f w a l l o w 9 0 0 1 / t c p & & s u d o u f w a l l o w 9 0 0 2 / t c p
+s u d o u f w a l l o w 5 0 0 1 / t c p & & s u d o u f w a l l o w 5 0 0 2 / t c p
+s u d o u f w r e l o a d & & s u d o u f w s t a t u s
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# C L E A N U P
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+d e a c t i v a t e # D e a c t i v a t e
+v e n v
+r m - r f c a / c e r t s / # R e m o v e a l l
+c e r t s
+Listing D.1: All pro ject commands in one place
+95 Be ginner's Guide
+
+=== PAGE 98 ===
+Appendix E
+T roubleshooting Guide
+Error: ConnectionRefusedError: [Errno 111] Connection refused
+Cause: The p eer v ehicle no de is not running y et, or the wrong p ort.
+Fix: Start the serv er (V ehicle A) b efore the clien t (V ehicle B). Chec k p orts matc h
+( port on A matc hes peer-port on B). V erify with: netstat -tlnp | grep
+9001
+Error: certificate verify failed: unable to get issuer certificate
+Cause: V ehicle is using a dieren t CA certicate than the one that signed the
+p eer's certicate.
+Fix: Ensure b oth v ehicles use the same ca_cert.pem . Cop y the le from the
+CA mac hine to all v ehicles.
+Error: Address already in use
+Cause: Another pro cess is using the p ort.
+Fix: lsof -i :9001 to nd the pro cess, then kill $(lsof -ti:9001) to kill
+it.
+Error: cryptography.exceptions.InvalidTag
+Cause: AES-GCM decryption failed  the ciphertext or tag w as mo died, OR
+the wrong session k ey is b eing used.
+Fix: V erify authen tication completed successfully b efore sending BSMs. Chec k
+that b oth sides deriv ed the session k ey from the same ECDH exc hange.
+Error: StaleMessageError: timestamp too old
+Cause: System clo c ks on t w o laptops are out of sync b y more than 5 seconds.
+Fix: Sync hronise clo c ks: sudo ntpdate pool.ntp.org
+Error: ReplayError: nonce already seen
+Cause: Either a repla y attac k w as detected (correct b eha viour!) or the nonce
+generation has a bug (should not happ en with os.urandom() ).
+Fix: If this app ears during normal op eration (not an attac k test), c hec k nonce
+generation co de  ensure os.urandom(32) is called for eac h new message.
+Error: ModuleNotFoundError: No module named 'cryptography'
+96
+
+=== PAGE 99 ===
+APPENDIX E. TR OUBLESHOOTING GUIDE V2V Comm unication Securit y
+Cause: Virtual en vironmen t not activ ated, or pac k ages not installed.
+Fix: source venv/bin/activate then pip install -r requirements.txt
+Flask dash b oard sho ws blank/Loading...
+Cause: Flask serv er is not running, or CORS issue.
+Fix: Ensure dashboard-port is set and c hec k the bro wser console (F12) for
+errors. T ry http://127.0.0.1:5001 instead of localhost:5001 .
+Do c k er: Cannot connect to the Docker daemon
+Cause: Do c k er service not running.
+Fix: sudo systemctl start docker (Lin ux) or start Do c k er Desktop (Win-
+do ws/macOS).
+97 Be ginner's Guide
+
+=== PAGE 100 ===
+Bibliography
+[1] IEEE Standards Asso ciation. IEEE Standar d for Wir eless A c c ess in V ehicular En-
+vir onments Se curity Servic es for Applic ations and Management Messages (IEEE
+1609.2-2022) . IEEE, 2022. https://standards.ieee.org/ieee/1609.2/7443/
+[2] SAE In ternational. SAE J2735: De dic ate d Short-R ange Communic ations (DSR C)
+Message Set Dictionary . SAE In ternational, 2023. https://www.sae.org/
+standards/content/j2735_202309/
+[3] National Institute of Standards and T ec hnology . FIPS PUB 197: A dvanc e d En-
+cryption Standar d (AES) . NIST, 2001. https://csrc.nist.gov/publications/
+detail/fips/197/final
+[4] National Institute of Standards and T ec hnology . FIPS PUB 186-4: Digital Sig-
+natur e Standar d (DSS) . NIST, 2013. https://csrc.nist.gov/publications/
+detail/fips/186/4/final
+[5] National Institute of Standards and T ec hnology . NIST SP 800-56A R ev. 3: R e c om-
+mendation for Pair-Wise Key-Establishment Schemes Using Discr ete L o garithm
+Crypto gr aphy . NIST, 2018. https://csrc.nist.gov/publications/detail/sp/
+800- 56a/rev- 3/final
+[6] Python Cryptographic Authorit y . crypto gr aphy  Crypto gr aphic R e cip es and
+Primitives for Python . PyCA, 2024. https://cryptography.io/en/latest/
+[7] V. Kumar, J. P etit, and W. Wh yte. Binary Hash T r e e Base d Certic ate A c c ess
+Management for V ehicle-to-V ehicle Communic ations . In Pro ceedings of the 7th
+A CM SIGSA C Conference on Computer and Comm unications Securit y , 2015.
+[8] M. Ra y a and J.-P . Hubaux. Se curing V ehicular A d Ho c Networks . Journal of
+Computer Securit y , 15(1):3968, 2007.
+[9] ETSI T ec hnical Committee. ETSI EN 302 637-2 V1.4.1: Intel ligent T r ansp ort
+Systems (ITS); V ehicular Communic ations; Basic Set of Applic ations; Part 2:
+Sp e cic ation of Co op er ative A war eness Basic Servic e . ETSI, 2019.
+98
+
+=== PAGE 101 ===
+BIBLIOGRAPHY V2V Comm unication Securit y
+[10] Eclipse F oundation. Eclipse Mosquitto: A n Op en Sour c e MQTT Br oker . Eclipse
+F oundation, 2024. https://mosquitto.org/
+[11] N. F erguson, B. Sc hneier, and T. K ohno. Crypto gr aphy Engine ering: Design Prin-
+ciples and Pr actic al Applic ations . Wiley , 2010. ISBN: 978-0-470-47424-2.
+[12] A. Ronac her et al. Flask: A Lightweight WSGI W eb Applic ation F r amework .
+P allets Pro jects, 2024. https://flask.palletsprojects.com/
+[13] ENISA  Europ ean Union Agency for Cyb ersecurit y . ENISA Thr e at L and-
+sc ap e for Conne cte d and A utomate d Mobility Systems and Servic es . ENISA, 2023.
+https://www.enisa.europa.eu/
+[14] United States Departmen t of T ransp ortation. V ehicle-to-Everything (V2X) Com-
+munic ations for Safety . USDOT, 2024. https://www.transportation.gov/av/
+v2x
+99 Be ginner's Guide
+
