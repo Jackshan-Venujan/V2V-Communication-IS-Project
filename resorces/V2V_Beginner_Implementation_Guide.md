@@ -1961,3 +1961,339 @@ Go through this before your demo (all commands in PowerShell with venv active):
 ---
 
 *This guide was simplified from the original V2V Security complete guide. Docker, MQTT, two-laptop setup, HMAC-on-top-of-AES-GCM, and complex threading have been removed. The core security concepts — CA, certificates, AES-256-GCM, ECDSA, ECDH, replay detection — are all present and working.*
+
+---
+---
+
+# 🧭 Design Rationale — Why These Methods? (Teaching & Presentation Guide)
+
+> **Purpose of this section:** The first half of this guide tells you *what to build*. This half tells you *why each choice was made*, *what the alternatives were*, and *why we rejected them*. Use it to answer examiner / audience questions like *"Why ECDSA and not RSA?"* or *"Why encrypt AND sign — isn't one enough?"*
+>
+> Every claim below maps to real code in this project. File references: `crypto/crypto.py`, `ca/ca.py`, `ca/issue_cert.py`, `protocol/auth_protocol.py`, `protocol/v2v_protocol.py`, `node/vehicle_node.py`, `config.py`.
+
+### 📌 One-Slide Summary — The Decision Matrix
+
+| # | Decision | We Chose | Main Alternative | Why We Rejected the Alternative |
+|---|----------|----------|------------------|---------------------------------|
+| 1 | Elliptic curve | **NIST P-256 (secp256r1)** | RSA-2048 / P-384 / Curve25519 | RSA too big & slow; P-384 overkill; P-256 is the V2V/TLS standard curve |
+| 2 | Digital signature | **ECDSA-SHA256** | RSA-PSS, Ed25519 | RSA slow & large; Ed25519 great but not X.509/V2V-standard default |
+| 3 | Key exchange | **Ephemeral ECDH (ECDHE)** | Static ECDH, RSA key transport | Static/RSA-transport have **no forward secrecy** |
+| 4 | Bulk encryption | **AES-256-GCM (AEAD)** | AES-CBC+HMAC, ChaCha20-Poly1305 | CBC+HMAC error-prone; ChaCha fine but no AES-NI advantage |
+| 5 | Key derivation | **HKDF-SHA256** | Raw secret, plain SHA-256, PBKDF2 | Raw secret not uniform; plain hash has no salt/domain-separation; PBKDF2 is for *passwords* |
+| 6 | Identity | **X.509 + custom Root CA** | Pre-shared keys, raw keys (TOFU) | PSK doesn't scale; TOFU is MITM-vulnerable on first contact |
+| 7 | Authentication | **4-step mutual challenge-response** | One-way auth, plain cert exchange | One-way leaves one car unverified; cert alone doesn't prove key *possession* |
+| 8 | Message order | **Sign-then-Encrypt** | Encrypt-then-Sign | Lets an attacker strip & re-attach signatures |
+| 9 | Freshness | **Nonce cache + timestamp + sequence #** | Any single one of them | Each one alone has a gap the others close |
+| 10 | Randomness | **`os.urandom` (CSPRNG)** | Python `random` module | `random` is predictable — fatal for keys/nonces |
+| 11 | Transport | **TCP + length-prefix framing** | UDP broadcast, MQTT | Teaching simplicity; handshake needs reliable, ordered delivery |
+
+---
+
+## A. Asymmetric Cryptography Choices
+
+### A1. Why the NIST P-256 curve (secp256r1)?
+
+**What the code does:** Every key pair — CA, vehicles, and ephemeral session keys — uses `SECP256R1()` (`ca/ca.py`, `crypto.py:generate_ecdh_keypair`, `config.py: EC_CURVE = "secp256r1"`).
+
+**Why P-256:**
+- **128-bit security level** — breaking it needs ~2¹²⁸ operations, far beyond any computer for the foreseeable future.
+- **It is the V2V industry curve.** The real automotive standard **IEEE 1609.2** (used by US/EU connected-vehicle systems) mandates ECDSA over **P-256 / P-384**. Choosing P-256 makes this project a faithful scale-model of the real thing.
+- **Universal tooling.** The PyCA `cryptography` library, X.509, OpenSSL, and TLS 1.3 all support it natively — no custom code.
+
+| Curve option | Security level | Speed | Verdict |
+|---|---|---|---|
+| **P-256 (chosen)** | 128-bit | Fast | ✅ Standard, fast, "enough" |
+| P-384 / P-521 | 192 / 256-bit | Slower | ❌ Overkill for our threat model; wastes CPU vehicles broadcasting 10×/sec can't spare |
+| Curve25519 / Ed25519 | ~128-bit | Fastest, misuse-resistant | ⚠️ Technically excellent, but **not the X.509/1609.2 default** — chosen against only for *standards alignment* |
+| secp256k1 (Bitcoin's curve) | 128-bit | Fast | ❌ Designed for blockchains, not for TLS/automotive PKI |
+
+**🎤 Talking point:** *"P-256 isn't the strongest curve available — it's the strongest curve we **need**, and it's the one real V2V systems actually use. Security engineering is matching strength to the threat, not maximizing a number."*
+
+> **Honest nuance for advanced questions:** Some cryptographers prefer Curve25519 because its parameters were generated transparently, whereas the NIST P-curves' constants are less "explainable." For a standards-compliant V2V demo, P-256 is still the correct teaching choice — but mentioning this shows depth.
+
+### A2. Why ECDSA for digital signatures (not RSA)?
+
+**What the code does:** `crypto.py:ecdsa_sign / ecdsa_verify` sign with `ECDSA(SHA256)`. Used to sign CA→vehicle certificates, the handshake nonces, and every BSM.
+
+**Why ECDSA:** A vehicle verifies *many* signatures per second (every neighbour's BSM). Signature/key size and speed dominate.
+
+| Property | RSA-2048 | **ECDSA P-256 (chosen)** |
+|---|---|---|
+| Public key size | 256 bytes | **32 bytes** |
+| Signature size | 256 bytes | **~71 bytes** |
+| Sign speed | Slow | **~10× faster** |
+| Security level | ~112-bit | **128-bit** |
+| Bandwidth on a 10 Hz radio | Heavy | **Light** |
+
+**Why not the alternatives:**
+- **RSA-2048/3072** — every signature is 256+ bytes and signing is slow. On a channel broadcasting 10 messages/second, the larger signatures and slower math directly hurt. Rejected.
+- **Ed25519 (EdDSA)** — actually *faster and more misuse-resistant* than ECDSA (deterministic, no risky per-signature random `k`). We didn't use it **only** because X.509 vehicle certificates and the IEEE 1609.2 standard are built around ECDSA. In a from-scratch design, Ed25519 would be a defensible upgrade.
+
+**🎤 Talking point:** *"Same security as RSA, but the key is 8× smaller and the signature is 3.5× smaller. For a car that has to verify hundreds of messages a second from every car around it, that size and speed difference is the whole game."*
+
+### A3. Why **ephemeral** ECDH (ECDHE) — and what is Forward Secrecy?
+
+**What the code does:** `crypto.py:generate_ecdh_keypair` creates a **brand-new** ECDH key pair for **every handshake** (`protocol/auth_protocol.py:process_challenge / process_response`). These keys are used once and then discarded.
+
+**Why ephemeral:** This gives **Forward Secrecy**. The session key is derived from keys that *no longer exist* after the session ends.
+
+> **Scenario to explain in the presentation:** An attacker records all encrypted V2V traffic today and stores it. Six months later they steal a vehicle's long-term private key from its certificate.
+> - With **static** keys → they can now decrypt all six months of recordings. 💀
+> - With **ephemeral** keys → they get *nothing*. The keys that produced those session keys were thrown away. ✅
+
+| Key exchange option | Forward secrecy? | Verdict |
+|---|---|---|
+| **Ephemeral ECDH (chosen)** | ✅ Yes | ✅ Past traffic stays safe even after a key theft |
+| Static-static ECDH (reuse the certificate's keys) | ❌ No | ❌ One key theft retroactively breaks every past session |
+| RSA key transport (one side picks the key, RSA-encrypts it) | ❌ No | ❌ This is exactly why **TLS 1.3 removed RSA key transport** |
+
+**🎤 Talking point:** *"The long-term certificate key proves **who you are**. The ephemeral ECDH key creates **today's secret**. Keeping those two jobs separate is what makes a stolen identity key unable to unlock yesterday's conversations."*
+
+---
+
+## B. Symmetric Encryption Choices
+
+### B1. Why AES-256-GCM (an AEAD cipher)?
+
+**What the code does:** `crypto.py:aes_gcm_encrypt / aes_gcm_decrypt` use `AESGCM` from PyCA. Every BSM payload is encrypted with the session key.
+
+**Why GCM specifically — it is an AEAD (Authenticated Encryption with Associated Data):** It does **two jobs in one pass**:
+1. **Confidentiality** — encrypts the data so eavesdroppers see gibberish.
+2. **Integrity** — produces a 128-bit **authentication tag**. Flip a single bit of the ciphertext and decryption *fails outright* — you never even see the tampered data.
+
+Other reasons:
+- **Hardware acceleration** — modern CPUs have AES-NI instructions, making AES-GCM extremely fast.
+- **Standard** — AES-GCM is a default cipher suite in **TLS 1.3**.
+
+| Cipher option | Integrity built in? | Risk / Cost | Verdict |
+|---|---|---|---|
+| **AES-256-GCM (chosen)** | ✅ Yes (one pass) | Nonce **must never repeat** | ✅ Fast, standard, integrity-included |
+| AES-CBC + separate HMAC | ⚠️ Only if done right | Two keys, two steps; wrong order → **padding-oracle attacks** | ❌ Easy to implement insecurely |
+| ChaCha20-Poly1305 | ✅ Yes | None major | ⚠️ Equally good — but no AES-NI advantage on our hardware |
+| AES-CCM | ✅ Yes | Two-pass, slower | ⚠️ Used by IEEE 1609.2, but GCM is one-pass & parallelizable |
+| Plain AES-CTR / AES-CBC (no MAC) | ❌ **No** | Attacker can flip bits undetected | ❌ Encryption without integrity is **not secure** |
+
+**Why not the alternatives:**
+- **AES-CBC + HMAC** — needs two keys and a *manual* "Encrypt-then-MAC" composition. Get the order wrong and you open a padding-oracle hole. GCM removes the chance to make that mistake.
+- **ChaCha20-Poly1305** — genuinely just as secure. We picked AES-GCM because our target machines have AES-NI hardware and because it matches TLS 1.3's default. (ChaCha is the *better* pick for low-power devices *without* AES-NI — a good "it depends" answer.)
+- **Plain CTR/CBC with no MAC** — gives confidentiality but **zero integrity**. Rejected immediately: an attacker could change "speed = 80" to "speed = 0" and you'd never know.
+
+### B2. Why AES-**256** and not AES-128?
+
+`config.py: AES_KEY_LENGTH = 32` (32 bytes = 256 bits). AES-128 is already considered unbreakable, but AES-256 costs almost nothing extra on modern CPUs and gives a larger safety margin (including a hedge against future quantum attacks, which roughly halve symmetric strength). When the price of "more" is near-zero, take it.
+
+### B3. Why a 12-byte (96-bit) random nonce?
+
+**What the code does:** `crypto.py:aes_gcm_encrypt` calls `os.urandom(12)` for every encryption (`config.py: NONCE_LENGTH = 12`).
+
+- **96 bits is GCM's *native* nonce size.** NIST SP 800-38D processes a 96-bit IV directly; any other length goes through an extra hashing step. 12 bytes = the fast, standard path.
+- **Random vs. counter:** A deterministic counter never repeats but needs both sides to track shared state. A random nonce needs no shared state — simpler and correct for a short-lived session.
+
+> **The one rule you must state out loud:** *Never reuse a (key, nonce) pair.* GCM nonce reuse is **catastrophic** — it leaks the authentication key and lets an attacker forge messages. Random 96-bit nonces are safe well within a single session because the collision (birthday) probability stays negligible until ~2³² messages — far more than any V2V session sends before re-keying.
+
+---
+
+## C. Key Derivation
+
+### C1. Why HKDF-SHA256 — why not use the ECDH secret directly?
+
+**What the code does:** `crypto.py:derive_session_key` feeds the raw ECDH output into **HKDF-SHA256**: `salt = nonce_a + nonce_b`, `info = b"v2v-session-key-v1"`, `length = 32`.
+
+**The problem HKDF solves:** The raw ECDH shared secret is the *x-coordinate of a point on the curve*. It is secret, but it is **not uniformly random** — some bit patterns are slightly more likely than others. AES keys must be uniformly random. HKDF's **extract-then-expand** design "cleans" the secret into a proper, uniform key.
+
+The HKDF inputs each do a job:
+- **`salt` = both nonces** — binds the key to *this specific session*. Same two cars handshaking twice ⇒ two different keys.
+- **`info` = `"v2v-session-key-v1"`** — *domain separation*. If you later derived other keys from the same secret, the `info` string keeps them independent.
+
+| KDF option | Right tool here? | Why / Why not |
+|---|---|---|
+| **HKDF-SHA256 (chosen)** | ✅ Yes | Purpose-built for **high-entropy** key material; adds salt + domain separation |
+| Use the raw ECDH secret as the key | ❌ No | Not uniformly distributed — biased key bits |
+| Plain `SHA256(secret)` | ❌ No | No salt → same secret always → same key; no domain separation; no extract/expand structure |
+| PBKDF2 / scrypt / Argon2 | ❌ No | Those are **password** KDFs — *deliberately slow* to fight brute force on *low-entropy* input. ECDH output is already high-entropy; slow stretching just wastes CPU |
+
+**🎤 Talking point:** *"Diffie-Hellman gives you a shared **secret**, not a shared **key**. HKDF is the standard, correct step that turns one into the other. Skipping it is a classic beginner mistake."*
+
+---
+
+## D. Identity & Public Key Infrastructure (PKI)
+
+### D1. Why X.509 certificates and a custom Root CA?
+
+**What the code does:** `ca/ca.py` builds a self-signed Root CA; `ca/issue_cert.py` issues a CA-signed X.509 certificate to each vehicle; `ca/verify_cert.py` and `auth_protocol.py:verify_certificate_against_ca` check them.
+
+**The core problem:** A public key is just a number. How does Vehicle B know a public key *truly belongs to* Vehicle A and not an impostor? A certificate **binds an identity to a public key**, and the CA's signature makes that binding **trustworthy**.
+
+| Identity option | Scales? | Verifies identity? | Verdict |
+|---|---|---|---|
+| **X.509 + Root CA (chosen)** | ✅ Yes | ✅ Yes (CA signature) | ✅ One trusted CA ⇒ trust anyone it signs |
+| Pre-shared keys (every pair shares a secret) | ❌ No (n² keys) | ⚠️ Weakly | ❌ Doesn't scale; no real identity; key-distribution nightmare |
+| Raw public keys / Trust-On-First-Use | ✅ Yes | ❌ **No** | ❌ First contact is unauthenticated → MITM walks straight in |
+| Web-of-trust (PGP-style) | ⚠️ Partly | ⚠️ Fuzzy | ❌ No clear authority; too vague for safety-critical traffic |
+
+**Why a CA wins:** A vehicle only has to pre-trust **one** thing — the CA certificate. Then it can instantly verify *any* vehicle the CA has ever signed, including ones it has never met. That is exactly the "passport / passport office" model.
+
+**🎤 Talking point:** *"Pre-shared keys mean 1,000 cars need ~500,000 secret keys. A CA means 1,000 cars need to trust exactly **one** certificate. That's the whole reason PKI exists."*
+
+### D2. Why a 10-year CA certificate but 1-year vehicle certificates?
+
+`ca/ca.py` sets the CA valid for **10 years**; `ca/issue_cert.py` sets vehicles for **1 year**.
+
+- The **CA is the trust anchor** — rotating it is disruptive (every vehicle must re-learn it), so it lives long and is guarded carefully.
+- **Leaf (vehicle) certificates are short-lived** so that a compromised or stolen vehicle credential automatically stops working soon. Short lifetimes *limit the blast radius* of a compromise.
+
+> **Real-world contrast (great for marks):** Production V2V (the **SCMS** — Security Credential Management System) goes much further — it issues **short-lived pseudonym certificates** that rotate frequently (even per-trip) so that an eavesdropper can't track *which* car is *which* over time. Our project uses one stable cert per car for teaching clarity, deliberately trading away that *privacy* feature.
+
+### D3. Why ECDSA key usage flags differ (CA vs vehicle)?
+
+`ca/ca.py` sets `BasicConstraints(ca=True)` + `key_cert_sign=True` — this certificate's *only* job is to sign other certificates. `ca/issue_cert.py` sets `ca=False` + `digital_signature=True` — a vehicle may sign messages but **may not** issue certificates. This enforces *least privilege*: even if a vehicle key leaks, it cannot mint fake vehicles.
+
+---
+
+## E. The Authentication Protocol
+
+### E1. Why a 4-step **mutual** handshake (and not one-way)?
+
+**What the code does:** `protocol/auth_protocol.py` runs HELLO → CHALLENGE → RESPONSE → ACK.
+
+- **Why mutual:** In HTTPS, only the *server* proves identity (one-way). In V2V, **both peers are equally untrusted** — Car A must verify Car B *and* Car B must verify Car A. A fake "braking!" warning from an unverified car can cause a crash.
+- **Why 4 messages:** Each pair of steps achieves one security goal:
+
+| Steps | Goal achieved |
+|---|---|
+| HELLO + CHALLENGE | Both sides exchange and verify **certificates** (identity) |
+| CHALLENGE + RESPONSE | Both sides **sign each other's nonce** — proving private-key *possession* (liveness) |
+| RESPONSE + ACK | Both sides exchange **ephemeral ECDH public keys** — establishing the session key |
+
+### E2. Why challenge-response with signed nonces — isn't showing the certificate enough?
+
+**No — and this is a key teaching point.** A certificate is *public*. An attacker can copy Vehicle A's certificate from any recorded message. Presenting a certificate only proves *"I have a copy of A's certificate,"* not *"I am A."*
+
+The fix: Vehicle B sends a fresh random **nonce** and demands *"sign this with your private key."* Only the real Vehicle A holds that private key, so only the real A can produce a valid signature over B's just-now-generated nonce. Because the nonce is fresh, a recorded old signature is useless.
+
+> This pattern — exchange certificates, then prove key possession by signing fresh nonces, then do ephemeral DH — is essentially a teaching-simplified version of the real **Station-to-Station (STS) / SIGMA** protocols that underpin IPsec and TLS.
+
+**Why we built it by hand instead of just calling a TLS library:** *Pedagogically.* Implementing the handshake exposes every moving part — nonces, certificate verification, signatures, key exchange. **In production you would absolutely use vetted TLS 1.3 or IEEE 1609.2**, never a hand-rolled protocol. Say this explicitly in your presentation; it shows you know the difference between a *learning model* and a *deployable system*.
+
+---
+
+## F. Message Security
+
+### F1. Why "Sign-then-Encrypt" (not "Encrypt-then-Sign")?
+
+**What the code does:** `protocol/v2v_protocol.py:secure_send` — Step 1 serialize BSM, Step 2 **ECDSA-sign the plaintext**, Step 3 **AES-GCM-encrypt** the (BSM + signature) together.
+
+**Why this order:**
+1. **The signature is bound to the actual message content.** It is computed over the real plaintext, so it provably attests to *that* data.
+2. **It defeats signature-stripping / substitution.** With *Encrypt-then-Sign*, the signature sits on the *outside* of the ciphertext. An attacker could peel that signature off, wrap it around a *different* ciphertext, and re-sign — causing confusion about who authored what. Signing the plaintext first makes the signature inseparable from the content.
+3. **It hides *who signed*.** The signature is *inside* the encryption, so an eavesdropper can't even see which vehicle authored a message — a small privacy bonus.
+
+### F2. "AES-GCM already gives integrity — why *also* sign with ECDSA?"
+
+This is the single best question an examiner can ask. The answer:
+
+> The AES-GCM session key is **shared by both vehicles**. So a valid GCM tag only proves *"someone who knows the session key sent this"* — and **both A and B know it**. GCM **cannot tell A's messages apart from B's.**
+>
+> The **ECDSA signature is made with a private key only one vehicle owns.** *That* is what proves a specific message came from *Vehicle A specifically* — and gives **non-repudiation**: A cannot later deny having sent it.
+
+| Mechanism | What it proves |
+|---|---|
+| AES-GCM auth tag | "This wasn't tampered with, and the sender knew the **shared** session key" |
+| ECDSA signature | "This came from **Vehicle A specifically**, who cannot deny it" (authentication + non-repudiation) |
+
+They are **not redundant** — they answer two different questions. That's why the project uses both.
+
+---
+
+## G. Replay & Freshness Protection
+
+### G1. Why three layers — nonce cache + timestamp window + sequence numbers?
+
+**What the code does:**
+- `auth_protocol.py:ReplayCache` — remembers seen 256-bit nonces for 5 minutes (`config.py: REPLAY_WINDOW_SECONDS = 300`).
+- `auth_protocol.py:TimestampValidator` — rejects anything older than 5 seconds (`config.py: TIMESTAMP_MAX_AGE = 5.0`).
+- `v2v_protocol.py:secure_receive` — rejects a BSM whose `sequence_num` is not greater than the last one seen.
+
+**Why all three — defence in depth.** Each single mechanism has a gap that the others close:
+
+| Mechanism | Catches | Gap when used *alone* |
+|---|---|---|
+| **Timestamp window (5 s)** | Old captured messages replayed much later | A replay *within* the 5-second window slips through |
+| **Nonce cache** | Any exact-duplicate message, even within the window | Cache would grow forever without the time-based expiry |
+| **Sequence numbers** | Re-ordered, duplicated, or *suppressed* (dropped) messages | Resets on reconnect; doesn't carry a wall-clock time |
+
+Together they cover replay *and* reordering *and* message suppression. No single one does.
+
+**Why a 5-second timestamp window?** It's a deliberate trade-off: long enough to tolerate normal clock skew and network delay between two machines, short enough that the window an attacker can replay inside is tiny.
+
+### G2. Why a **256-bit** handshake nonce but only a **96-bit** GCM nonce?
+
+Different jobs, different sizes:
+- **Handshake nonce — 256-bit** (`os.urandom(32)`): must be *globally collision-resistant* across the system's whole lifetime. 256 bits makes an accidental repeat astronomically impossible.
+- **GCM nonce — 96-bit** (`os.urandom(12)`): only needs uniqueness *within one short session under one key*, and 96 bits is GCM's optimal native size (see B3).
+
+---
+
+## H. Supporting Engineering Choices
+
+### H1. Why the PyCA `cryptography` library (not roll-your-own)?
+
+**The #1 rule of applied cryptography: never invent your own.** The `cryptography` library is OpenSSL-backed, professionally audited, and exposes *misuse-resistant* high-level APIs (`AESGCM`, `HKDF`, `x509`). Alternatives: PyCryptodome (also fine, but `cryptography` has the de-facto-standard modern API and stronger X.509 support); `hashlib` + manual math (re-implementing primitives = guaranteed subtle bugs — rejected outright).
+
+### H2. Why `os.urandom` and not Python's `random`?
+
+`crypto.py` and `auth_protocol.py` use **`os.urandom`** for every key and nonce. Python's `random` module is a **Mersenne Twister** — fast but **predictable**: observe enough outputs and you can compute all future ones. Using it for a key or nonce would silently destroy all security. `os.urandom` is the OS **CSPRNG** (cryptographically secure).
+
+> **Nice detail to point out:** `node/vehicle_node.py` *does* use `random` — but only to jitter the *simulated* speed/GPS values in fake BSMs. That data isn't security-sensitive, so it's a correct, deliberate split: CSPRNG for secrets, fast PRNG for simulation.
+
+### H3. Why SHA-256 as the hash everywhere?
+
+ECDSA, HKDF, and certificate signing all use **SHA-256**: ~128-bit collision resistance (matches our P-256 / AES strength — balanced design), fast, hardware-accelerated, universally supported. **SHA-1** is rejected (practical collisions exist since 2017). **SHA-512 / SHA-3** offer no benefit at this security level — SHA-512 is marginally slower for no gain, SHA-3 is less universally accelerated. Keep the whole system at one consistent ~128-bit level.
+
+### H4. Why TCP + length-prefix framing (not UDP)?
+
+**What the code does:** `node/vehicle_node.py` uses TCP sockets with `send_framed` / `recv_framed` — every message is prefixed with a 4-byte big-endian length.
+
+- **Why framing:** TCP is a **byte stream** with no message boundaries. The 4-byte length prefix tells the receiver exactly how many bytes form one message. (A delimiter byte can't be used — encrypted/binary data can contain *any* byte, including the delimiter.)
+- **Why TCP for this project:** The handshake is a strict ordered sequence; TCP's reliable, in-order delivery means we don't have to write packet-loss / retransmission logic. That keeps the focus on *security*, not networking.
+
+> **Real-world contrast (important honesty point):** Actual V2V does **not** use TCP. It uses **connectionless UDP-style broadcast** over DSRC or C-V2X radio, because a car must shout BSMs to *all* nearby cars 10×/second with no time for connection setup. We chose TCP as a **deliberate teaching simplification** — say so in your presentation, and you turn a "limitation" into a sign you understand the real domain.
+
+### H5. Why PEM format for storing certificates and keys?
+
+`ca.py` / `issue_cert.py` write **PEM** (Base64 text with `-----BEGIN-----` headers) rather than raw binary **DER**. PEM is human-readable, survives copy-paste and email, and is the universal default for OpenSSL/X.509 tooling. DER (binary) is more compact but awkward to inspect or move around by hand.
+
+---
+
+## I. ⚠️ Deliberate Simplifications — What Real V2V Does Differently
+
+Stating these *yourself* in the presentation is far stronger than being caught out by them. Each is a conscious teaching trade-off, not an oversight:
+
+| Area | This project | Production V2V | Why we simplified |
+|---|---|---|---|
+| **Private key storage** | PEM files, **unencrypted** (`NoEncryption()`) | Encrypted keystore, **HSM / TPM** hardware | Lab clarity — no password/hardware setup. *Production must never store keys in plaintext.* |
+| **Certificate revocation** | None | **CRLs / OCSP** — a stolen cert can be revoked | Out of scope; would need a revocation distribution system |
+| **Privacy** | One fixed cert per vehicle (trackable) | **Rotating pseudonym certificates** | Stable IDs make the demo readable; real systems rotate certs to stop tracking |
+| **Transport** | TCP, point-to-point, 1 peer (`listen(1)`) | UDP-style **broadcast** to all neighbours, DSRC/C-V2X radio | TCP reliability lets us focus on crypto |
+| **Cert standard** | X.509 | **IEEE 1609.2** certificates | X.509 has better Python tooling for teaching |
+| **The handshake** | Hand-written 4-step protocol | Vetted **TLS 1.3 / 1609.2** | Hand-rolling *teaches* the mechanics; you'd never deploy it |
+| **Send rate** | 1 BSM/second | ~10 BSM/second | Slower rate keeps logs/dashboard human-readable |
+
+**🎤 Closing talking point:** *"Every simplification here was a conscious choice to make the **security concepts** visible. The cryptography itself — P-256, ECDSA, ECDHE, AES-256-GCM, HKDF — is exactly what real systems use. What we simplified is the **deployment plumbing**, not the **security core**."*
+
+---
+
+## J. Quick-Fire Q&A — Rehearse These Before Your Presentation
+
+| Likely question | Your one-line answer |
+|---|---|
+| *Why ECDSA, not RSA?* | Same 128-bit security, but ~8× smaller keys and faster — vital when verifying many messages/second. |
+| *Why encrypt **and** sign?* | GCM's key is shared, so it can't identify *which* peer sent a message; only the ECDSA signature proves a specific sender (non-repudiation). |
+| *What is forward secrecy?* | Ephemeral ECDH keys are discarded after each session, so stealing a long-term key later can't decrypt past traffic. |
+| *Why HKDF — why not use the DH secret directly?* | The raw ECDH secret isn't uniformly random; HKDF turns it into a proper key and binds it to the session via the nonces. |
+| *Why sign-then-encrypt?* | It ties the signature to the real content and stops attackers stripping/re-attaching signatures. |
+| *How is replay stopped?* | Three layers: a 5-second timestamp window, a seen-nonce cache, and ever-increasing sequence numbers. |
+| *Why a CA instead of shared keys?* | Each car trusts **one** CA cert and can then verify **any** car the CA signed — pre-shared keys would need n² secrets. |
+| *Biggest weakness of this project?* | It's a single-machine TCP simplification with no revocation, plaintext key files, and a hand-rolled handshake — production would use 1609.2/TLS, an HSM, and CRLs. |
+| *Why AES-256 over AES-128?* | 128 is already safe; 256 costs almost nothing extra and adds margin (including against future quantum attacks). |
+| *What if a GCM nonce repeats?* | Catastrophic — it leaks the auth key and enables forgery; that's why every nonce comes fresh from `os.urandom`. |

@@ -1,0 +1,294 @@
+\contentsline {chapter}{How to Use This Study Pack}{4}{chapter*.2}%
+\contentsline {chapter}{\numberline {1}S1 --- Big Picture and Threat Model}{5}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Title and ``What You'll Learn''}{5}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Where This Fits}{6}{section.1.2}%
+\contentsline {section}{\numberline {1.3}The Theory You Must Study}{6}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}Vehicle-to-Vehicle (V2V) Communication}{6}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}Basic Safety Message (BSM)}{6}{subsection.1.3.2}%
+\contentsline {subsection}{\numberline {1.3.3}The Untrusted Channel and the Threat Model}{7}{subsection.1.3.3}%
+\contentsline {subsection}{\numberline {1.3.4}The Four Attacks}{7}{subsection.1.3.4}%
+\contentsline {subsection}{\numberline {1.3.5}The Six Security Properties}{8}{subsection.1.3.5}%
+\contentsline {section}{\numberline {1.4}Code Walkthrough}{9}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}Group 1 --- Network Configuration}{9}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}Group 2 --- Certificate Paths}{10}{subsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.4.3}Group 3 --- Security Parameters}{10}{subsection.1.4.3}%
+\contentsline {subsection}{\numberline {1.4.4}Group 4 --- Crypto Settings}{10}{subsection.1.4.4}%
+\contentsline {subsection}{\numberline {1.4.5}Group 5 --- Simulation Settings}{10}{subsection.1.4.5}%
+\contentsline {section}{\numberline {1.5}Hands-On / Practical}{11}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Step 1 --- Check Python and the crypto library}{11}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Step 2 --- Inspect the shared constants}{11}{subsection.1.5.2}%
+\contentsline {subsection}{\numberline {1.5.3}Step 3 --- Watch the whole pipeline once}{11}{subsection.1.5.3}%
+\contentsline {subsection}{\numberline {1.5.4}Try This Yourself (mini-experiment)}{12}{subsection.1.5.4}%
+\contentsline {section}{\numberline {1.6}Attack Relevance}{12}{section.1.6}%
+\contentsline {section}{\numberline {1.7}Illustrations}{12}{section.1.7}%
+\contentsline {subsection}{\numberline {1.7.1}Diagram 1 --- The Threat Model}{12}{subsection.1.7.1}%
+\contentsline {subsection}{\numberline {1.7.2}Diagram 2 --- The Three-Stage Pipeline with Files}{12}{subsection.1.7.2}%
+\contentsline {section}{\numberline {1.8}Presentation Pack}{13}{section.1.8}%
+\contentsline {subsection}{\numberline {1.8.1}Slide Outline}{13}{subsection.1.8.1}%
+\contentsline {subsection}{\numberline {1.8.2}Speaker Talking Points (about 30--60 seconds each)}{14}{subsection.1.8.2}%
+\contentsline {subsection}{\numberline {1.8.3}Live-Demo Script}{14}{subsection.1.8.3}%
+\contentsline {subsection}{\numberline {1.8.4}Examiner Q\&A}{14}{subsection.1.8.4}%
+\contentsline {section}{\numberline {1.9}Glossary}{15}{section.1.9}%
+\contentsline {section}{\numberline {1.10}References and Further Study}{16}{section.1.10}%
+\contentsline {chapter}{\numberline {2}S2 --- Public Key Infrastructure and the Certificate Authority}{18}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Title and ``What You'll Learn''}{18}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Where This Fits}{19}{section.2.2}%
+\contentsline {section}{\numberline {2.3}The Theory You Must Study}{19}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Symmetric vs Asymmetric (Public-Key) Cryptography}{19}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Elliptic-Curve Cryptography (ECC) and the P-256 Curve}{19}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}SHA-256 Hashing}{20}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Digital Signatures and ECDSA}{20}{subsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.3.5}X.509 Certificates}{20}{subsection.2.3.5}%
+\contentsline {subsection}{\numberline {2.3.6}Certificate Extensions: BasicConstraints and KeyUsage}{21}{subsection.2.3.6}%
+\contentsline {subsection}{\numberline {2.3.7}Encodings: Base64, DER and PEM}{21}{subsection.2.3.7}%
+\contentsline {subsection}{\numberline {2.3.8}PKI, the Chain of Trust, and the Self-Signed Root}{21}{subsection.2.3.8}%
+\contentsline {subsection}{\numberline {2.3.9}Serial Number and Fingerprint}{22}{subsection.2.3.9}%
+\contentsline {section}{\numberline {2.4}Code Walkthrough}{22}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}File: ca/ca.py --- creating the Certificate Authority}{22}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}File: ca/issue\_cert.py --- issuing a vehicle certificate}{24}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}File: ca/verify\_cert.py --- checking a certificate}{26}{subsection.2.4.3}%
+\contentsline {section}{\numberline {2.5}Hands-On / Practical}{28}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Step 1 --- Create the Certificate Authority}{28}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}Step 2 --- Issue a certificate for each vehicle}{28}{subsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.5.3}Step 3 --- Verify a certificate}{29}{subsection.2.5.3}%
+\contentsline {subsection}{\numberline {2.5.4}Try This Yourself (mini-experiment): forge detection}{29}{subsection.2.5.4}%
+\contentsline {section}{\numberline {2.6}Attack Relevance}{29}{section.2.6}%
+\contentsline {section}{\numberline {2.7}Illustrations}{30}{section.2.7}%
+\contentsline {subsection}{\numberline {2.7.1}Diagram 1 --- The Chain of Trust}{30}{subsection.2.7.1}%
+\contentsline {subsection}{\numberline {2.7.2}Diagram 2 --- Issue then Verify}{30}{subsection.2.7.2}%
+\contentsline {section}{\numberline {2.8}Presentation Pack}{30}{section.2.8}%
+\contentsline {subsection}{\numberline {2.8.1}Slide Outline}{30}{subsection.2.8.1}%
+\contentsline {subsection}{\numberline {2.8.2}Speaker Talking Points (about 30--60 seconds each)}{31}{subsection.2.8.2}%
+\contentsline {subsection}{\numberline {2.8.3}Live-Demo Script}{32}{subsection.2.8.3}%
+\contentsline {subsection}{\numberline {2.8.4}Examiner Q\&A}{32}{subsection.2.8.4}%
+\contentsline {section}{\numberline {2.9}Glossary}{33}{section.2.9}%
+\contentsline {section}{\numberline {2.10}References and Further Study}{34}{section.2.10}%
+\contentsline {chapter}{\numberline {3}S3 --- The Cryptographic Core}{36}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Title and ``What You'll Learn''}{36}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Where This Fits}{36}{section.3.2}%
+\contentsline {section}{\numberline {3.3}The Theory You Must Study}{37}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Symmetric Encryption and AES}{37}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Authenticated Encryption and AES-256-GCM}{37}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}The Nonce}{38}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}ECDH --- Elliptic-Curve Diffie--Hellman Key Exchange}{38}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.3.5}Ephemeral Keys and Forward Secrecy}{38}{subsection.3.3.5}%
+\contentsline {subsection}{\numberline {3.3.6}HKDF --- Turning a Raw Secret into a Real Key}{39}{subsection.3.3.6}%
+\contentsline {subsection}{\numberline {3.3.7}SHA-256 Hashing}{39}{subsection.3.3.7}%
+\contentsline {subsection}{\numberline {3.3.8}ECDSA --- Digital Signatures}{39}{subsection.3.3.8}%
+\contentsline {subsection}{\numberline {3.3.9}PEM Serialization of Keys}{39}{subsection.3.3.9}%
+\contentsline {section}{\numberline {3.4}Code Walkthrough}{40}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}The custom exceptions and the type guard}{40}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}aes\_gcm\_encrypt() --- lock a message}{40}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}aes\_gcm\_decrypt() --- unlock and verify}{41}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}generate\_ecdh\_keypair() --- a fresh key pair per session}{42}{subsection.3.4.4}%
+\contentsline {subsection}{\numberline {3.4.5}ecdh\_shared\_secret() --- compute the shared number}{42}{subsection.3.4.5}%
+\contentsline {subsection}{\numberline {3.4.6}derive\_session\_key() --- raw secret to clean AES key}{42}{subsection.3.4.6}%
+\contentsline {subsection}{\numberline {3.4.7}ecdsa\_sign() and ecdsa\_verify() --- digital signatures}{43}{subsection.3.4.7}%
+\contentsline {subsection}{\numberline {3.4.8}serialize\_public\_key(), load\_public\_key(), load\_private\_key()}{44}{subsection.3.4.8}%
+\contentsline {subsection}{\numberline {3.4.9}The built-in demonstration (\texttt {if \_\_name\_\_ == "\_\_main\_\_"})}{44}{subsection.3.4.9}%
+\contentsline {section}{\numberline {3.5}Hands-On / Practical}{44}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Run the cryptographic core by itself}{44}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}What each output line means}{45}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}Try This Yourself (mini-experiment): break the tag}{45}{subsection.3.5.3}%
+\contentsline {section}{\numberline {3.6}Attack Relevance}{45}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Illustrations}{46}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Diagram 1 --- AES-256-GCM Encrypt then Decrypt}{46}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}Diagram 2 --- ECDH gives both sides the same secret}{46}{subsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.7.3}Diagram 3 --- The S3 pipeline that builds a session key}{47}{subsection.3.7.3}%
+\contentsline {section}{\numberline {3.8}Presentation Pack}{47}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Slide Outline}{47}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}Speaker Talking Points (about 30--60 seconds each)}{48}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.3}Live-Demo Script}{48}{subsection.3.8.3}%
+\contentsline {subsection}{\numberline {3.8.4}Examiner Q\&A}{48}{subsection.3.8.4}%
+\contentsline {section}{\numberline {3.9}Glossary}{49}{section.3.9}%
+\contentsline {section}{\numberline {3.10}References and Further Study}{50}{section.3.10}%
+\contentsline {chapter}{\numberline {4}S4 --- The 4-Step Authentication Handshake}{52}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Title and ``What You'll Learn''}{52}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Where This Fits}{52}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The Theory You Must Study}{53}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Mutual Authentication}{53}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Challenge--Response and the Handshake Nonce}{53}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Replay Attacks and the Replay Cache}{53}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}Timestamp / Freshness Validation}{54}{subsection.4.3.4}%
+\contentsline {subsection}{\numberline {4.3.5}Certificate Verification (recap from S2)}{54}{subsection.4.3.5}%
+\contentsline {subsection}{\numberline {4.3.6}ECDH Ephemeral Key Exchange (recap from S3)}{54}{subsection.4.3.6}%
+\contentsline {subsection}{\numberline {4.3.7}Dataclasses and the JSON Wire Format}{54}{subsection.4.3.7}%
+\contentsline {subsection}{\numberline {4.3.8}Why Exactly Four Steps?}{55}{subsection.4.3.8}%
+\contentsline {section}{\numberline {4.4}Code Walkthrough}{55}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}The custom exceptions}{55}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}The four message dataclasses}{55}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}ReplayCache --- catching repeated nonces}{56}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}TimestampValidator --- catching stale messages}{57}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}verify\_certificate\_against\_ca --- the certificate gate}{57}{subsection.4.4.5}%
+\contentsline {subsection}{\numberline {4.4.6}The AuthProtocol class}{58}{subsection.4.4.6}%
+\contentsline {section}{\numberline {4.5}Hands-On / Practical}{61}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Run the handshake by itself}{61}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}What the output lines mean}{62}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Try This Yourself (three ways to break the handshake)}{62}{subsection.4.5.3}%
+\contentsline {section}{\numberline {4.6}Attack Relevance}{63}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Illustrations}{63}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Diagram 1 --- The 4-Step Handshake (message flow)}{63}{subsection.4.7.1}%
+\contentsline {subsection}{\numberline {4.7.2}Diagram 2 --- The three gates every handshake message passes}{64}{subsection.4.7.2}%
+\contentsline {section}{\numberline {4.8}Presentation Pack}{64}{section.4.8}%
+\contentsline {subsection}{\numberline {4.8.1}Slide Outline}{64}{subsection.4.8.1}%
+\contentsline {subsection}{\numberline {4.8.2}Speaker Talking Points (about 30--60 seconds each)}{65}{subsection.4.8.2}%
+\contentsline {subsection}{\numberline {4.8.3}Live-Demo Script}{66}{subsection.4.8.3}%
+\contentsline {subsection}{\numberline {4.8.4}Examiner Q\&A}{66}{subsection.4.8.4}%
+\contentsline {section}{\numberline {4.9}Glossary}{67}{section.4.9}%
+\contentsline {section}{\numberline {4.10}References and Further Study}{68}{section.4.10}%
+\contentsline {chapter}{\numberline {5}S5 --- Secure Messaging}{70}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Title and ``What You'll Learn''}{70}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Where This Fits}{70}{section.5.2}%
+\contentsline {section}{\numberline {5.3}The Theory You Must Study}{71}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}The Basic Safety Message (BSM)}{71}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Sign-then-Encrypt}{71}{subsection.5.3.2}%
+\contentsline {subsection}{\numberline {5.3.3}ECDSA Digital Signatures (recap from S3)}{71}{subsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.3.4}AES-256-GCM Authenticated Encryption (recap from S3)}{71}{subsection.5.3.4}%
+\contentsline {subsection}{\numberline {5.3.5}Serialization: JSON and Binary Packing}{72}{subsection.5.3.5}%
+\contentsline {subsection}{\numberline {5.3.6}Length-Prefixing and Big-Endian (the \texttt {struct} module)}{72}{subsection.5.3.6}%
+\contentsline {subsection}{\numberline {5.3.7}Sequence Numbers and Replay Defence}{72}{subsection.5.3.7}%
+\contentsline {section}{\numberline {5.4}Code Walkthrough}{73}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}The three exceptions}{73}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}BasicSafetyMessage --- the plain message}{73}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}SecureBSM --- the on-the-wire envelope}{73}{subsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.4.4}MessageLogger --- the record keeper}{74}{subsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.4.5}secure\_send() --- Sign-then-Encrypt}{75}{subsection.5.4.5}%
+\contentsline {subsection}{\numberline {5.4.6}secure\_receive() --- Decrypt-then-Verify}{76}{subsection.5.4.6}%
+\contentsline {subsection}{\numberline {5.4.7}The demo block}{77}{subsection.5.4.7}%
+\contentsline {section}{\numberline {5.5}Hands-On / Practical}{77}{section.5.5}%
+\contentsline {subsection}{\numberline {5.5.1}Run the messaging protocol by itself}{77}{subsection.5.5.1}%
+\contentsline {subsection}{\numberline {5.5.2}What the output lines mean}{77}{subsection.5.5.2}%
+\contentsline {subsection}{\numberline {5.5.3}Try This Yourself (mini-experiment)}{77}{subsection.5.5.3}%
+\contentsline {section}{\numberline {5.6}Attack Relevance}{78}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Illustrations}{78}{section.5.7}%
+\contentsline {subsection}{\numberline {5.7.1}Diagram 1 --- the Sign-then-Encrypt pipeline}{78}{subsection.5.7.1}%
+\contentsline {subsection}{\numberline {5.7.2}Diagram 2 --- the SecureBSM wire format}{79}{subsection.5.7.2}%
+\contentsline {section}{\numberline {5.8}Presentation Pack}{79}{section.5.8}%
+\contentsline {subsection}{\numberline {5.8.1}Slide Outline}{79}{subsection.5.8.1}%
+\contentsline {subsection}{\numberline {5.8.2}Speaker Talking Points (about 30--60 seconds each)}{79}{subsection.5.8.2}%
+\contentsline {subsection}{\numberline {5.8.3}Live-Demo Script}{80}{subsection.5.8.3}%
+\contentsline {subsection}{\numberline {5.8.4}Examiner Q\&A}{80}{subsection.5.8.4}%
+\contentsline {section}{\numberline {5.9}Glossary}{81}{section.5.9}%
+\contentsline {section}{\numberline {5.10}References and Further Study}{82}{section.5.10}%
+\contentsline {chapter}{\numberline {6}S6 --- The Vehicle Node and TCP Networking}{84}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Title and ``What You'll Learn''}{84}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Where This Fits}{84}{section.6.2}%
+\contentsline {section}{\numberline {6.3}The Theory You Must Study}{85}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}TCP and Sockets}{85}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}The Message-Framing Problem}{85}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Server and Client Roles}{85}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}Threads and Concurrency}{86}{subsection.6.3.4}%
+\contentsline {subsection}{\numberline {6.3.5}Connection Retries and Exponential Backoff}{86}{subsection.6.3.5}%
+\contentsline {section}{\numberline {6.4}Code Walkthrough}{86}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}The TCP framing helpers}{86}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}VehicleNode.\_\_init\_\_ --- set the node up}{87}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}start\_server() and \_accept\_loop() --- the server role}{88}{subsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.4.4}connect\_to\_peer() --- the client role with retries}{88}{subsection.6.4.4}%
+\contentsline {subsection}{\numberline {6.4.5}The two handshake drivers}{89}{subsection.6.4.5}%
+\contentsline {subsection}{\numberline {6.4.6}The send and receive loops}{89}{subsection.6.4.6}%
+\contentsline {subsection}{\numberline {6.4.7}get\_state() and shutdown()}{90}{subsection.6.4.7}%
+\contentsline {subsection}{\numberline {6.4.8}main() --- the program entry point}{90}{subsection.6.4.8}%
+\contentsline {section}{\numberline {6.5}Hands-On / Practical}{90}{section.6.5}%
+\contentsline {subsection}{\numberline {6.5.1}Run two vehicle nodes}{90}{subsection.6.5.1}%
+\contentsline {subsection}{\numberline {6.5.2}What the output lines mean}{91}{subsection.6.5.2}%
+\contentsline {subsection}{\numberline {6.5.3}Try This Yourself (mini-experiment)}{91}{subsection.6.5.3}%
+\contentsline {section}{\numberline {6.6}Attack Relevance}{91}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Illustrations}{92}{section.6.7}%
+\contentsline {subsection}{\numberline {6.7.1}Diagram 1 --- the two-node network}{92}{subsection.6.7.1}%
+\contentsline {subsection}{\numberline {6.7.2}Diagram 2 --- length-prefix framing}{92}{subsection.6.7.2}%
+\contentsline {subsection}{\numberline {6.7.3}Diagram 3 --- the two communication threads}{92}{subsection.6.7.3}%
+\contentsline {section}{\numberline {6.8}Presentation Pack}{93}{section.6.8}%
+\contentsline {subsection}{\numberline {6.8.1}Slide Outline}{93}{subsection.6.8.1}%
+\contentsline {subsection}{\numberline {6.8.2}Speaker Talking Points (about 30--60 seconds each)}{93}{subsection.6.8.2}%
+\contentsline {subsection}{\numberline {6.8.3}Live-Demo Script}{94}{subsection.6.8.3}%
+\contentsline {subsection}{\numberline {6.8.4}Examiner Q\&A}{94}{subsection.6.8.4}%
+\contentsline {section}{\numberline {6.9}Glossary}{95}{section.6.9}%
+\contentsline {section}{\numberline {6.10}References and Further Study}{96}{section.6.10}%
+\contentsline {chapter}{\numberline {7}S7 --- The Monitoring Dashboard}{97}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Title and ``What You'll Learn''}{97}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Where This Fits}{97}{section.7.2}%
+\contentsline {section}{\numberline {7.3}The Theory You Must Study}{98}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Web Server, Flask and HTTP}{98}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Routes / Endpoints}{98}{subsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.3.3}REST API, GET and POST}{98}{subsection.7.3.3}%
+\contentsline {subsection}{\numberline {7.3.4}JSON --- the Browser/Server Language}{99}{subsection.7.3.4}%
+\contentsline {subsection}{\numberline {7.3.5}Polling}{99}{subsection.7.3.5}%
+\contentsline {subsection}{\numberline {7.3.6}CORS}{99}{subsection.7.3.6}%
+\contentsline {section}{\numberline {7.4}Code Walkthrough}{99}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}File: dashboard/app.py --- the Flask server}{99}{subsection.7.4.1}%
+\contentsline {subsection}{\numberline {7.4.2}File: dashboard.html --- the page and its JavaScript}{100}{subsection.7.4.2}%
+\contentsline {section}{\numberline {7.5}Hands-On / Practical}{102}{section.7.5}%
+\contentsline {subsection}{\numberline {7.5.1}Open the dashboard}{102}{subsection.7.5.1}%
+\contentsline {subsection}{\numberline {7.5.2}What the dashboard shows}{102}{subsection.7.5.2}%
+\contentsline {subsection}{\numberline {7.5.3}Illustration placeholder --- dashboard screenshot}{103}{subsection.7.5.3}%
+\contentsline {subsection}{\numberline {7.5.4}Try This Yourself (mini-experiment)}{103}{subsection.7.5.4}%
+\contentsline {section}{\numberline {7.6}Attack Relevance}{103}{section.7.6}%
+\contentsline {section}{\numberline {7.7}Illustrations}{104}{section.7.7}%
+\contentsline {subsection}{\numberline {7.7.1}Diagram 1 --- browser, Flask and the vehicle node}{104}{subsection.7.7.1}%
+\contentsline {subsection}{\numberline {7.7.2}Diagram 2 --- the polling loop}{104}{subsection.7.7.2}%
+\contentsline {section}{\numberline {7.8}Presentation Pack}{104}{section.7.8}%
+\contentsline {subsection}{\numberline {7.8.1}Slide Outline}{104}{subsection.7.8.1}%
+\contentsline {subsection}{\numberline {7.8.2}Speaker Talking Points (about 30--60 seconds each)}{105}{subsection.7.8.2}%
+\contentsline {subsection}{\numberline {7.8.3}Live-Demo Script}{106}{subsection.7.8.3}%
+\contentsline {subsection}{\numberline {7.8.4}Examiner Q\&A}{106}{subsection.7.8.4}%
+\contentsline {section}{\numberline {7.9}Glossary}{106}{section.7.9}%
+\contentsline {section}{\numberline {7.10}References and Further Study}{108}{section.7.10}%
+\contentsline {chapter}{\numberline {8}S8 --- Attack Demonstrations}{109}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Title and ``What You'll Learn''}{109}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Where This Fits}{109}{section.8.2}%
+\contentsline {section}{\numberline {8.3}The Theory You Must Study}{110}{section.8.3}%
+\contentsline {subsection}{\numberline {8.3.1}Adversarial Testing (Red-Teaming)}{110}{subsection.8.3.1}%
+\contentsline {subsection}{\numberline {8.3.2}The Replay Attack}{110}{subsection.8.3.2}%
+\contentsline {subsection}{\numberline {8.3.3}The Tamper Attack}{110}{subsection.8.3.3}%
+\contentsline {subsection}{\numberline {8.3.4}The Man-in-the-Middle (MITM) Attack}{111}{subsection.8.3.4}%
+\contentsline {subsection}{\numberline {8.3.5}Self-Signed Forgery vs CA-Signed Trust}{111}{subsection.8.3.5}%
+\contentsline {section}{\numberline {8.4}Code Walkthrough}{111}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}File: attacks/replay\_attack.py}{111}{subsection.8.4.1}%
+\contentsline {subsection}{\numberline {8.4.2}File: attacks/tamper\_attack.py}{112}{subsection.8.4.2}%
+\contentsline {subsection}{\numberline {8.4.3}File: attacks/mitm\_attack.py}{113}{subsection.8.4.3}%
+\contentsline {section}{\numberline {8.5}Hands-On / Practical}{114}{section.8.5}%
+\contentsline {subsection}{\numberline {8.5.1}Run the three attack scripts}{114}{subsection.8.5.1}%
+\contentsline {subsection}{\numberline {8.5.2}What the output lines mean}{115}{subsection.8.5.2}%
+\contentsline {subsection}{\numberline {8.5.3}Try This Yourself (mini-experiment)}{116}{subsection.8.5.3}%
+\contentsline {section}{\numberline {8.6}Attack Relevance}{116}{section.8.6}%
+\contentsline {section}{\numberline {8.7}Illustrations}{117}{section.8.7}%
+\contentsline {subsection}{\numberline {8.7.1}Diagram 1 --- the three attacks and their defences}{117}{subsection.8.7.1}%
+\contentsline {subsection}{\numberline {8.7.2}Diagram 2 --- the replay attack timeline}{117}{subsection.8.7.2}%
+\contentsline {section}{\numberline {8.8}Presentation Pack}{117}{section.8.8}%
+\contentsline {subsection}{\numberline {8.8.1}Slide Outline}{117}{subsection.8.8.1}%
+\contentsline {subsection}{\numberline {8.8.2}Speaker Talking Points (about 30--60 seconds each)}{118}{subsection.8.8.2}%
+\contentsline {subsection}{\numberline {8.8.3}Live-Demo Script}{118}{subsection.8.8.3}%
+\contentsline {subsection}{\numberline {8.8.4}Examiner Q\&A}{119}{subsection.8.8.4}%
+\contentsline {section}{\numberline {8.9}Glossary}{119}{section.8.9}%
+\contentsline {section}{\numberline {8.10}References and Further Study}{120}{section.8.10}%
+\contentsline {chapter}{\numberline {9}S9 --- Security Evaluation}{122}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Title and ``What You'll Learn''}{122}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Where This Fits}{122}{section.9.2}%
+\contentsline {section}{\numberline {9.3}The Theory You Must Study}{123}{section.9.3}%
+\contentsline {subsection}{\numberline {9.3.1}Benchmarking and Throughput}{123}{subsection.9.3.1}%
+\contentsline {subsection}{\numberline {9.3.2}High-Resolution Timing (\texttt {time.perf\_counter})}{123}{subsection.9.3.2}%
+\contentsline {subsection}{\numberline {9.3.3}Pass/Fail Thresholds}{123}{subsection.9.3.3}%
+\contentsline {subsection}{\numberline {9.3.4}Detection Rate}{124}{subsection.9.3.4}%
+\contentsline {subsection}{\numberline {9.3.5}Nonce Uniqueness and the Birthday Problem}{124}{subsection.9.3.5}%
+\contentsline {subsection}{\numberline {9.3.6}Measuring vs Proving Security}{124}{subsection.9.3.6}%
+\contentsline {section}{\numberline {9.4}Code Walkthrough}{124}{section.9.4}%
+\contentsline {subsection}{\numberline {9.4.1}The three speed tests}{125}{subsection.9.4.1}%
+\contentsline {subsection}{\numberline {9.4.2}test\_replay\_detection() --- 100\% replay catching}{125}{subsection.9.4.2}%
+\contentsline {subsection}{\numberline {9.4.3}test\_tamper\_detection() --- 100\% tamper catching}{126}{subsection.9.4.3}%
+\contentsline {subsection}{\numberline {9.4.4}test\_nonce\_uniqueness() --- no collisions}{126}{subsection.9.4.4}%
+\contentsline {subsection}{\numberline {9.4.5}format\_table() and main()}{127}{subsection.9.4.5}%
+\contentsline {section}{\numberline {9.5}Hands-On / Practical}{127}{section.9.5}%
+\contentsline {subsection}{\numberline {9.5.1}Run the evaluation}{127}{subsection.9.5.1}%
+\contentsline {subsection}{\numberline {9.5.2}What each row means}{127}{subsection.9.5.2}%
+\contentsline {subsection}{\numberline {9.5.3}Try This Yourself (mini-experiment)}{128}{subsection.9.5.3}%
+\contentsline {section}{\numberline {9.6}Attack Relevance}{128}{section.9.6}%
+\contentsline {section}{\numberline {9.7}Illustrations}{129}{section.9.7}%
+\contentsline {subsection}{\numberline {9.7.1}Diagram 1 --- the six tests feeding one report}{129}{subsection.9.7.1}%
+\contentsline {subsection}{\numberline {9.7.2}Diagram 2 --- the benchmark loop}{129}{subsection.9.7.2}%
+\contentsline {section}{\numberline {9.8}Presentation Pack}{129}{section.9.8}%
+\contentsline {subsection}{\numberline {9.8.1}Slide Outline}{129}{subsection.9.8.1}%
+\contentsline {subsection}{\numberline {9.8.2}Speaker Talking Points (about 30--60 seconds each)}{130}{subsection.9.8.2}%
+\contentsline {subsection}{\numberline {9.8.3}Live-Demo Script}{130}{subsection.9.8.3}%
+\contentsline {subsection}{\numberline {9.8.4}Examiner Q\&A}{131}{subsection.9.8.4}%
+\contentsline {section}{\numberline {9.9}Glossary}{131}{section.9.9}%
+\contentsline {section}{\numberline {9.10}References and Further Study}{132}{section.9.10}%

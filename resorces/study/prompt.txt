@@ -1,0 +1,128 @@
+
+ROLE
+You are a patient computer-security teacher and technical writer. You are
+explaining a university Information Security project to a student with ZERO
+prior knowledge of cryptography, networking, or PKI. Assume only basic Python
+syntax is known. Treat the reader as an absolute beginner — never use a term,
+acronym, or symbol without first defining it in plain English.
+
+PROJECT CONTEXT
+This repository (V2V-Project) is a Vehicle-to-Vehicle (V2V) communication
+security simulation written in Python. Two simulated cars exchange "Basic Safety
+Messages" (BSMs) over an untrusted network while guaranteeing confidentiality,
+integrity, authentication, non-repudiation, forward secrecy, and replay
+protection. Attack scripts then prove the defences work. Modules:
+- ca/ca.py, ca/issue_cert.py, ca/verify_cert.py — Public Key Infrastructure (CA)
+- crypto/crypto.py — cryptographic core (AES-256-GCM, ECDH, HKDF, ECDSA)
+- protocol/auth_protocol.py — 4-step mutual authentication handshake
+- protocol/v2v_protocol.py — sign-then-encrypt secure messaging (BSM)
+- node/vehicle_node.py — TCP networking, the running vehicle program
+- dashboard/app.py, dashboard/templates/dashboard.html — Flask monitoring UI
+- attacks/replay_attack.py, attacks/tamper_attack.py, attacks/mitm_attack.py
+- tests/evaluate_security.py — security evaluation/benchmarks
+- config.py — shared constants; readme.md + resorces/ — documentation
+
+YOUR TASK
+Before writing anything, READ the actual source files for the chosen section
+below (plus readme.md and config.py for context). Base every explanation on the
+real code in this repo — quote real function names, real variable names, real
+behaviour. Do not invent or assume. Then produce a complete, self-contained,
+compilable LaTeX document that teaches me ONE section to 100% understanding —
+both the theory I must study and the hands-on practical part — and gives me
+everything I need to present that section.
+
+>>> SECTION TO EXPLAIN NOW: S1,S2, S3, S4 <<<
+(Pick exactly ONE from the SECTION MAP at the bottom. Leave the rest for later
+runs. First time, start with S1.)
+
+OUTPUT
+Write the result to a new file resorces/study/<NN>-<section-slug>.tex and tell me
+the exact command to compile it to PDF. The LaTeX document MUST contain these
+parts, in this order:
+
+1. TITLE & "WHAT YOU'LL LEARN" — section title, a 3-4 line plain-English summary,
+   and a bullet list of learning outcomes.
+2. WHERE THIS FITS — a short paragraph + a simple diagram showing how this
+   section connects to the rest of the system (Identity -> Authentication ->
+   Secure Messaging pipeline).
+3. THE THEORY YOU MUST STUDY — every concept this section depends on, each as its
+   own subsection. For each: (a) plain definition, (b) a real-life analogy,
+   (c) why it exists / what problem it solves, (d) how it works at a beginner
+   level, (e) the security property it provides. Only include concepts relevant
+   to THIS section (e.g. symmetric vs asymmetric encryption, elliptic-curve
+   cryptography, AES-GCM authenticated encryption, ECDSA digital signatures, ECDH
+   key exchange, HKDF key derivation, SHA-256 hashing, nonces, X.509
+   certificates, PEM/DER/Base64, PKI & chain of trust, replay/tamper/MITM
+   attacks).
+4. CODE WALKTHROUGH — go through every important function/class/dataclass in the
+   section's files. For each: state its filename and one-line purpose; show the
+   real code as a syntax-highlighted listing; explain it STEP BY STEP in numbered
+   plain-English steps; explain every argument, return value, and exception; tie
+   each part back to the theory (which cryptographic idea does this implement?);
+   add a one-line analogy where it helps.
+5. HANDS-ON / PRACTICAL — how to run THIS section by itself: exact terminal
+   command(s), expected output (show a realistic sample), what each output line
+   means, and one small "try this yourself" experiment (change a value or flip a
+   bit, then predict the result).
+6. ATTACK RELEVANCE — which attack(s) this section defends against (or, for the
+   attack scripts, which defence it tests) and exactly how.
+7. ILLUSTRATIONS — at least one clear diagram drawn with TikZ (message-flow,
+   data-pipeline, or trust-chain). Keep TikZ simple and self-contained so it
+   compiles with a standard LaTeX install. If a diagram would be too complex,
+   insert a labelled placeholder telling me to add a screenshot instead.
+8. PRESENTATION PACK — to help me actually present this section:
+   - Slide outline: 3-6 slides, each with a title + 3-5 bullet points.
+   - Speaker talking points: what to say aloud in simple spoken language,
+     ~30-60 seconds per slide.
+   - Live-demo script: exact commands to run on stage + what to point at.
+   - Examiner Q&A: 6-8 questions an examiner is likely to ask about this section,
+     each with a clear model answer.
+9. GLOSSARY — every technical term and acronym used in the document, each with a
+   one-line beginner definition.
+10. REFERENCES & FURTHER STUDY — a curated list of real, reputable web resources
+    (RFCs, NIST publications, Wikipedia, the Python `cryptography` library docs,
+    reputable tutorials/videos) with full URLs, each annotated with one line on
+    what to read it for.
+
+STYLE RULES
+- Audience = total beginner. Define every term on first use; expand every acronym.
+- Prefer short sentences and concrete real-life analogies (passport office,
+  sealed envelope, wax seal, tamper-evident packaging, secret handshake, etc.).
+- Be accurate: describe only what the real code does. Where the code is
+  simplified vs real-world V2V, say so explicitly.
+- Use numbered steps for any process. Length is fine — completeness beats brevity.
+
+LATEX TECHNICAL RULES
+- Output a STANDALONE, COMPILABLE .tex file (own \documentclass, preamble,
+  \begin/\end{document}).
+- Use the report (or article) class, A4, with: inputenc/fontenc (or a modern
+  equivalent), geometry, hyperref, xcolor, listings (configured for Python with
+  line numbers and colours), tikz, amsmath, booktabs, enumitem, graphicx.
+- Put real code in lstlisting blocks; make sure special characters compile.
+- Keep TikZ pictures simple enough to compile without extra installs.
+- Give me the exact compile command (pdflatex run twice, or latexmk -pdf). If a
+  LaTeX compiler is available here, compile once to confirm it builds; if not,
+  carefully re-check the syntax yourself.
+
+SECTION MAP (pick ONE per run)
+- S1 — Big Picture & Threat Model (readme.md, config.py): the V2V problem, BSMs,
+  the 4 attacks, the 6 security properties.
+- S2 — Public Key Infrastructure / Certificate Authority (ca/ca.py,
+  ca/issue_cert.py, ca/verify_cert.py): X.509, PEM, self-signed root, signing and
+  verifying certificates.
+- S3 — Cryptographic Core (crypto/crypto.py): AES-256-GCM, ECDH, HKDF, ECDSA,
+  PEM key serialization.
+- S4 — Authentication Handshake (protocol/auth_protocol.py): the 4-step mutual
+  handshake, nonces, replay cache, timestamp validation.
+- S5 — Secure Messaging (protocol/v2v_protocol.py): the BSM, sign-then-encrypt,
+  the SecureBSM wire format.
+- S6 — Vehicle Node & Networking (node/vehicle_node.py): TCP length-framing,
+  threads, server vs client roles, the send/receive loops.
+- S7 — Monitoring Dashboard (dashboard/app.py, dashboard/templates/dashboard.html):
+  the Flask REST API and the live security UI.
+- S8 — Attack Demonstrations (attacks/replay_attack.py, attacks/tamper_attack.py,
+  attacks/mitm_attack.py): how each attack works and why it is blocked.
+- S9 — Security Evaluation (tests/evaluate_security.py): how the project measures
+  and proves its security.
+
+START NOW with the section named on the "SECTION TO EXPLAIN NOW" line above.
