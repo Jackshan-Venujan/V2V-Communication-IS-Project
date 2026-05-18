@@ -60,6 +60,47 @@ from protocol.v2v_protocol import (  # noqa: E402
 log = logging.getLogger(__name__)
 
 
+# ── Rate Limiter (Availability — DoS Protection) ─────────────────────────
+# Tracks incoming message rates per sender and drops excess traffic to
+# prevent a single malicious node from overwhelming the system.
+
+
+class RateLimiter:
+    """Limit incoming messages per sender to prevent DoS flooding.
+
+    If a sender exceeds *max_per_second* messages within a 1-second
+    sliding window, subsequent messages are silently dropped until the
+    window expires.  This keeps the node available for legitimate peers.
+    """
+
+    def __init__(self, max_per_second: int = 15) -> None:
+        self._max = max_per_second
+        self._counts: dict[str, list[float]] = {}  # {sender_id: [timestamps]}
+        self._lock = threading.Lock()
+        self.total_dropped: int = 0
+
+    def allow(self, sender_id: str) -> bool:
+        """Return True if the sender is within rate limits, False to drop."""
+        now = time.time()
+        with self._lock:
+            timestamps = self._counts.get(sender_id, [])
+            # Keep only timestamps within the last 1 second
+            timestamps = [t for t in timestamps if now - t < 1.0]
+            if len(timestamps) >= self._max:
+                self.total_dropped += 1
+                log.warning(
+                    "[RATE-LIMIT] Dropping message from %s "
+                    "(%d msgs/sec exceeds limit of %d)",
+                    sender_id, len(timestamps), self._max,
+                )
+                self._counts[sender_id] = timestamps
+                return False
+            timestamps.append(now)
+            self._counts[sender_id] = timestamps
+            return True
+
+
+
 # ── TCP Framing Helpers ───────────────────────────────────────────────────
 # TCP is a byte stream — it has no concept of "messages".  We prefix every
 # message with a 4-byte big-endian length so the receiver knows exactly
@@ -130,12 +171,22 @@ class VehicleNode:
         self.peer_public_key = None
         self.peer_id: str | None = None
 
+        # Rate limiter — availability protection against DoS flooding
+        self.rate_limiter = RateLimiter(max_per_second=15)
+
         # Networking
         self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.running = True
         self._seq = 0
         self._last_peer_seq: int | None = None
+
+        # Auto-reconnection state — availability protection against drops
+        self._peer_host: str | None = None
+        self._peer_port: int | None = None
+        self._is_initiator: bool = False
+        self._conn: socket.socket | None = None
+        self._conn_lock = threading.Lock()
 
     # ── Server ────────────────────────────────────────────────────
 
@@ -160,6 +211,11 @@ class VehicleNode:
 
     def connect_to_peer(self, host: str, port: int) -> bool:
         """Connect to a peer and run the initiator handshake."""
+        # Store peer info so auto-reconnection can find them again
+        self._peer_host = host
+        self._peer_port = port
+        self._is_initiator = True
+
         retries = 5
         for attempt in range(1, retries + 1):
             try:
@@ -208,6 +264,8 @@ class VehicleNode:
                 "[%s] === AUTHENTICATED with %s ===",
                 self.vehicle_id, self.peer_id,
             )
+            with self._conn_lock:
+                self._conn = conn
             self._start_comm_threads(conn)
 
         except AuthError as exc:
@@ -242,6 +300,8 @@ class VehicleNode:
                 "[%s] === AUTHENTICATED with %s ===",
                 self.vehicle_id, self.peer_id,
             )
+            with self._conn_lock:
+                self._conn = conn
             self._start_comm_threads(conn)
 
         except AuthError as exc:
@@ -284,13 +344,26 @@ class VehicleNode:
                 time.sleep(self.bsm_interval)
             except (ConnectionError, OSError):
                 log.warning("[%s] Connection lost during send", self.vehicle_id)
+                self._attempt_reconnection()
                 break
 
     def _receive_loop(self, conn: socket.socket) -> None:
-        """Continuously receive and verify BSMs from the peer."""
+        """Continuously receive and verify BSMs from the peer.
+
+        Includes rate limiting — if a sender exceeds 15 messages/second,
+        excess messages are dropped to maintain availability.
+        """
         while self.running:
             try:
                 raw = recv_framed(conn)
+
+                # ── Rate Limiting Check (Availability) ──
+                # Before doing any expensive crypto, check if this sender
+                # is flooding us.  Drop excess messages immediately.
+                sender_id = self.peer_id or "unknown"
+                if not self.rate_limiter.allow(sender_id):
+                    continue  # silently drop — DoS protection
+
                 bsm = secure_receive(
                     raw,
                     self.session_key,
@@ -312,7 +385,69 @@ class VehicleNode:
                 log.warning("[%s] REPLAY ALERT: %s", self.vehicle_id, exc)
             except ConnectionError:
                 log.warning("[%s] Connection lost during receive", self.vehicle_id)
+                self._attempt_reconnection()
                 break
+
+    # ── Auto-Reconnection (Availability) ──────────────────────────
+
+    def _attempt_reconnection(self) -> None:
+        """Try to re-establish the connection after a drop.
+
+        If this node was the initiator (client), it reconnects to the
+        peer and re-runs the full handshake.  If this node was the
+        responder (server), it re-opens the accept loop to wait for
+        the peer to reconnect.  This ensures temporary network failures
+        do not permanently disrupt communication.
+        """
+        if not self.running:
+            return
+
+        # Close old connection cleanly
+        with self._conn_lock:
+            if self._conn:
+                try:
+                    self._conn.close()
+                except OSError:
+                    pass
+                self._conn = None
+
+        # Reset session state for a fresh handshake
+        self.session_key = None
+        self.peer_public_key = None
+
+        # Re-create the AuthProtocol so nonce/state is fresh
+        self.auth = AuthProtocol(
+            self.vehicle_id, self.private_key, self.cert_pem, self.ca_cert_pem
+        )
+        self.replay_cache = ReplayCache()
+        self._last_peer_seq = None
+
+        if self._is_initiator and self._peer_host and self._peer_port:
+            # Initiator: actively reconnect with exponential backoff
+            max_retries = 10
+            for attempt in range(1, max_retries + 1):
+                if not self.running:
+                    return
+                wait = min(2 * attempt, 30)  # cap at 30 seconds
+                log.info(
+                    "[%s] AUTO-RECONNECT attempt %d/%d in %ds...",
+                    self.vehicle_id, attempt, max_retries, wait,
+                )
+                time.sleep(wait)
+                if self.connect_to_peer(self._peer_host, self._peer_port):
+                    log.info("[%s] AUTO-RECONNECT successful!", self.vehicle_id)
+                    return
+            log.error(
+                "[%s] AUTO-RECONNECT failed after %d attempts",
+                self.vehicle_id, max_retries,
+            )
+        else:
+            # Responder: re-open the accept loop and wait for peer
+            log.info(
+                "[%s] AUTO-RECONNECT: waiting for peer to reconnect...",
+                self.vehicle_id,
+            )
+            threading.Thread(target=self._accept_loop, daemon=True).start()
 
     # ── Dashboard State ───────────────────────────────────────────
 
@@ -345,6 +480,7 @@ class VehicleNode:
                 "total_received": self.logger.total_received,
                 "tamper_attempts_blocked": self.logger.tamper_blocked,
                 "replay_attempts_blocked": self.logger.replay_blocked,
+                "rate_limit_dropped": self.rate_limiter.total_dropped,
             },
         }
 
