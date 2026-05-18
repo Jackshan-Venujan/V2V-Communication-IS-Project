@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2V Security Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+        }
+
+        /* ── Header ─────────────────────────────────────── */
+        header {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            padding: 20px 30px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        header h1 { font-size: 1.6em; letter-spacing: 1px; }
+        header p { color: #90caf9; font-size: 0.9em; margin-top: 4px; }
+
+        /* ── Container ──────────────────────────────────── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        /* ── Status Cards ───────────────────────────────── */
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px;
+            transition: border-color 0.3s;
+        }
+        .card:hover { border-color: #58a6ff; }
+        .card h3 { color: #8b949e; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .badge-green { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid #3fb950; }
+        .badge-red { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid #f85149; }
+        .badge-yellow { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid #d29922; }
+        .card-detail { color: #8b949e; font-size: 0.85em; margin-top: 8px; line-height: 1.7; }
+        .card-detail strong { color: #e6edf3; }
+
+        /* Blinking alert card */
+        @keyframes blink-red {
+            0%, 100% { border-color: #f85149; box-shadow: 0 0 15px rgba(248,81,73,0.4); }
+            50% { border-color: #30363d; box-shadow: none; }
+        }
+        .alert-active { animation: blink-red 1s infinite; }
+
+        /* ── Stats Row ──────────────────────────────────── */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-num { font-size: 2em; font-weight: 700; color: #58a6ff; }
+        .stat-label { color: #8b949e; font-size: 0.75em; text-transform: uppercase; margin-top: 4px; }
+
+        /* ── Table ──────────────────────────────────────── */
+        .table-wrap {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table-header { padding: 16px 20px; border-bottom: 1px solid #30363d; }
+        .table-header h3 { font-size: 1em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th {
+            background: #0d1117;
+            color: #8b949e;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            text-align: left;
+            position: sticky; top: 0;
+        }
+        td { padding: 10px 12px; border-top: 1px solid #21262d; }
+        tr:hover td { background: rgba(88,166,255,0.05); }
+        .check { color: #3fb950; font-weight: 700; }
+        .cross { color: #f85149; font-weight: 700; }
+        .dir-sent { color: #58a6ff; }
+        .dir-recv { color: #d2a8ff; }
+
+        /* ── Footer ─────────────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #484f58;
+            font-size: 0.8em;
+        }
+
+        /* ── Clear button ───────────────────────────────── */
+        .btn-clear {
+            background: transparent;
+            border: 1px solid #f85149;
+            color: #f85149;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+        .btn-clear:hover { background: rgba(248,81,73,0.15); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="title">V2V Security Dashboard</h1>
+        <p>Real-time secure vehicle communication monitor</p>
+    </header>
+
+    <div class="container">
+        <!-- Status Cards -->
+        <div class="cards">
+            <div class="card" id="cert-card">
+                <h3>Certificate Status</h3>
+                <span id="cert-badge" class="badge badge-yellow">LOADING</span>
+                <div class="card-detail">
+                    <div>CN: <strong id="cert-cn">--</strong></div>
+                    <div>Expires: <strong id="cert-expiry">--</strong></div>
+                </div>
+            </div>
+            <div class="card" id="auth-card">
+                <h3>Authentication Status</h3>
+                <span id="auth-badge" class="badge badge-yellow">LOADING</span>
+                <div class="card-detail">
+                    <div>Peer: <strong id="peer-id">--</strong></div>
+                    <div>Session Key: <strong id="session-status">--</strong></div>
+                </div>
+            </div>
+            <div class="card" id="alert-card">
+                <h3>Security Alerts</h3>
+                <span id="alert-badge" class="badge badge-green">0 ALERTS</span>
+                <div class="card-detail">
+                    <div id="alert-latest">No security alerts</div>
+                </div>
+                <button class="btn-clear" onclick="clearAlerts()">Clear Alerts</button>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-num" id="stat-sent">0</div>
+                <div class="stat-label">Messages Sent</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-recv">0</div>
+                <div class="stat-label">Messages Received</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-blocked" style="color:#f85149">0</div>
+                <div class="stat-label">Attacks Blocked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-session">--</div>
+                <div class="stat-label">Session Active</div>
+            </div>
+        </div>
+
+        <!-- Recent Messages -->
+        <div class="table-wrap">
+            <div class="table-header"><h3>Recent Messages</h3></div>
+            <div style="max-height:400px;overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dir</th><th>Time</th><th>Vehicle</th>
+                            <th>Speed</th><th>Heading</th><th>Brake</th>
+                            <th>Auth</th><th>Encrypted</th><th>Integrity</th><th>Replay</th>
+                        </tr>
+                    </thead>
+                    <tbody id="msg-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer id="footer">Auto-refreshes every 3 seconds</footer>
+
+    <script>
+        async function fetchState() {
+            try {
+                const r = await fetch('/api/state');
+                const d = await r.json();
+                update(d);
+            } catch (e) { console.error('Fetch failed', e); }
+        }
+
+        function update(d) {
+            // Title
+            document.getElementById('title').textContent =
+                'V2V Security Dashboard - ' + d.vehicle_id;
+
+            // Certificate card
+            const cb = document.getElementById('cert-badge');
+            cb.textContent = d.cert_status;
+            cb.className = 'badge ' + (d.cert_status === 'VALID' ? 'badge-green' : 'badge-red');
+            document.getElementById('cert-cn').textContent = d.cert_cn;
+            document.getElementById('cert-expiry').textContent = d.cert_expiry;
+
+            // Auth card
+            const ab = document.getElementById('auth-badge');
+            const authed = d.auth_status === 'AUTHENTICATED';
+            ab.textContent = d.auth_status;
+            ab.className = 'badge ' + (authed ? 'badge-green' : 'badge-yellow');
+            document.getElementById('peer-id').textContent = d.peer_id;
+            document.getElementById('session-status').textContent =
+                d.session_active ? 'Active' : 'None';
+
+            // Alert card
+            const alerts = d.alerts || [];
+            const alb = document.getElementById('alert-badge');
+            const ac = document.getElementById('alert-card');
+            if (alerts.length > 0) {
+                alb.textContent = alerts.length + ' ALERT' + (alerts.length > 1 ? 'S' : '');
+                alb.className = 'badge badge-red';
+                ac.classList.add('alert-active');
+                document.getElementById('alert-latest').textContent =
+                    alerts[alerts.length - 1].type + ': ' + alerts[alerts.length - 1].details;
+            } else {
+                alb.textContent = '0 ALERTS';
+                alb.className = 'badge badge-green';
+                ac.classList.remove('alert-active');
+                document.getElementById('alert-latest').textContent = 'No security alerts';
+            }
+
+            // Stats
+            const s = d.stats || {};
+            document.getElementById('stat-sent').textContent = s.total_sent || 0;
+            document.getElementById('stat-recv').textContent = s.total_received || 0;
+            document.getElementById('stat-blocked').textContent =
+                (s.tamper_attempts_blocked || 0) + (s.replay_attempts_blocked || 0);
+            document.getElementById('stat-session').textContent =
+                d.session_active ? 'YES' : 'NO';
+            document.getElementById('stat-session').style.color =
+                d.session_active ? '#3fb950' : '#f85149';
+
+            // Messages table
+            const tbody = document.getElementById('msg-body');
+            tbody.innerHTML = '';
+            (d.recent_messages || []).forEach(m => {
+                const sec = m.security || {};
+                const row = document.createElement('tr');
+                row.innerHTML =
+                    '<td class="' + (m.direction === 'SENT' ? 'dir-sent' : 'dir-recv') + '">' +
+                        m.direction + '</td>' +
+                    '<td>' + m.time + '</td>' +
+                    '<td>' + m.vehicle_id + '</td>' +
+                    '<td>' + (m.speed != null ? m.speed.toFixed(1) : '--') + '</td>' +
+                    '<td>' + (m.heading != null ? m.heading.toFixed(0) : '--') + '</td>' +
+                    '<td>' + (m.brake ? 'YES' : 'no') + '</td>' +
+                    '<td class="' + (sec.authenticated ? 'check' : 'cross') + '">' +
+                        (sec.authenticated ? 'YES' : 'NO') + '</td>' +
+                    '<td class="' + (sec.encrypted ? 'check' : 'cross') + '">' +
+                        (sec.encrypted ? 'YES' : 'NO') + '</td>' +
+                    '<td class="' + (sec.integrity_verified ? 'check' : 'cross') + '">' +
+                        (sec.integrity_verified ? 'YES' : 'NO') + '</td>' +
+                    '<td class="' + (sec.replay_protected ? 'check' : 'cross') + '">' +
+                        (sec.replay_protected ? 'YES' : 'NO') + '</td>';
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('footer').textContent =
+                'Auto-refreshes every 3 seconds | Vehicle: ' + d.vehicle_id +
+                ' | Dashboard port: ' + window.location.port;
+        }
+
+        async function clearAlerts() {
+            await fetch('/api/clear-alerts', { method: 'POST' });
+            fetchState();
+        }
+
+        setInterval(fetchState, 3000);
+        fetchState();
+    </script>
+</body>
+</html>

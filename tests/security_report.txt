@@ -1,0 +1,18 @@
+========================================================
+     V2V SECURITY EVALUATION REPORT
+========================================================
+
++-----------------------------+----------------+----------+----------+
+| Test                        | Result         | Target   | Status   |
++=============================+================+==========+==========+
+| Encryption Speed            | 84972 ops/s    | >500     | PASS     |
+| Decryption Speed            | 145349 ops/s   | >500     | PASS     |
+| Signature Speed             | 4626 ops/s     | >100     | PASS     |
+| Replay Detection Rate       | 100/100        | 100%     | PASS     |
+| Tamper Detection Rate       | 50/50          | 100%     | PASS     |
+| Nonce Uniqueness (10k)      | 0 collisions   | 0        | PASS     |
++-----------------------------+----------------+----------+----------+
+
+Overall: 6/6 tests PASSED
+
+Generated: 2026-05-16 12:06:43
