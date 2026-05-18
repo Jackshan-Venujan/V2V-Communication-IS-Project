@@ -142,6 +142,7 @@ If we encrypted first and then signed, an attacker could strip the signature off
 |---|---|---|
 | **Confidentiality** | Only the intended recipient can read the message | AES-256-GCM encryption with a session key |
 | **Integrity** | Messages cannot be modified without detection | AES-GCM authentication tag (128-bit tamper seal) |
+| **Availability** | The system remains functional despite disruptions | Rate limiting and automatic reconnection |
 | **Authentication** | Both vehicles prove their identity to each other | X.509 certificates + 4-step handshake |
 | **Non-repudiation** | A sender cannot deny sending a message | ECDSA digital signatures on every BSM |
 | **Forward Secrecy** | Past sessions stay secure even if keys are leaked | Ephemeral ECDHE key exchange per session |
@@ -165,6 +166,34 @@ If we encrypted first and then signed, an attacker could strip the signature off
 **What:** Attacker sits between two vehicles, intercepting and modifying their communication.
 **Defence (Scenario A):** Attacker creates a fake certificate — rejected because it's not signed by the trusted CA. **Defence (Scenario B):** Attacker tries to forge a signature — rejected because they don't have the vehicle's private key.
 **Demo:** `python attacks\mitm_attack.py`
+
+### 4. Denial of Service (DoS) Flooding Attack
+**What:** Attacker floods the network with thousands of messages per second to overwhelm the vehicle's processing capacity.
+**Defence:** The node implements a sliding-window rate limiter that silently drops messages if a sender exceeds 15 messages per second, protecting system availability. This is checked *before* any expensive cryptographic operations are performed:
+
+```python
+class RateLimiter:
+    """Limit incoming messages per sender to prevent DoS flooding."""
+    def __init__(self, max_per_second: int = 15) -> None:
+        self._max = max_per_second
+        self._counts: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def allow(self, sender_id: str) -> bool:
+        now = time.time()
+        with self._lock:
+            timestamps = self._counts.get(sender_id, [])
+            timestamps = [t for t in timestamps if now - t < 1.0]
+            if len(timestamps) >= self._max:
+                return False  # Silently drop the message
+            timestamps.append(now)
+            self._counts[sender_id] = timestamps
+            return True
+```
+
+### 5. Network Disruption Attack
+**What:** Attacker temporarily jams the signal or disrupts the TCP connection to break the V2V link.
+**Defence:** The system implements an automatic reconnection mechanism with exponential backoff. If the connection drops, it automatically re-establishes the TCP link and re-runs the full 4-step authentication handshake without manual intervention.
 
 ---
 
