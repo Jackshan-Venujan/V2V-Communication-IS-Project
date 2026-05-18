@@ -47,4 +47,11 @@ def create_app(node) -> Flask:
         node.logger.clear_alerts()
         return jsonify({"status": "cleared"})
 
+    @app.route("/api/attack/<attack_type>", methods=["POST"])
+    def api_attack(attack_type):
+        if attack_type in ["tamper", "replay", "mitm", "dos"]:
+            node.trigger_attack(attack_type)
+            return jsonify({"status": "attack_triggered", "type": attack_type})
+        return jsonify({"error": "Unknown attack"}), 400
+
     return app

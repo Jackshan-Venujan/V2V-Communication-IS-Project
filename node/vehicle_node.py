@@ -188,6 +188,10 @@ class VehicleNode:
         self._conn: socket.socket | None = None
         self._conn_lock = threading.Lock()
 
+        # Attack simulation state
+        self.next_attack: str | None = None
+        self._last_sent_wire: bytes | None = None
+
     # ── Server ────────────────────────────────────────────────────
 
     def start_server(self) -> None:
@@ -321,8 +325,19 @@ class VehicleNode:
 
     def _bsm_send_loop(self, conn: socket.socket) -> None:
         """Send one BSM every ``bsm_interval`` seconds."""
+        from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1, generate_private_key
+
         while self.running:
             try:
+                attack = self.next_attack
+                self.next_attack = None
+
+                if attack == "replay" and self._last_sent_wire:
+                    send_framed(conn, self._last_sent_wire)
+                    log.info("[%s] Simulated REPLAY attack", self.vehicle_id)
+                    time.sleep(self.bsm_interval)
+                    continue
+
                 self._seq += 1
                 bsm = BasicSafetyMessage(
                     vehicle_id=self.vehicle_id,
@@ -335,12 +350,32 @@ class VehicleNode:
                     brake_applied=random.random() < 0.1,
                     acceleration=round(random.uniform(-2, 3), 1),
                 )
-                wire = secure_send(bsm, self.session_key, self.private_key, self.logger)
-                send_framed(conn, wire)
-                log.info(
-                    "[%s] BSM #%d sent: speed=%.1f km/h",
-                    self.vehicle_id, self._seq, bsm.speed_kmh,
-                )
+
+                if attack == "mitm":
+                    fake_priv = generate_private_key(SECP256R1())
+                    wire = secure_send(bsm, self.session_key, fake_priv, self.logger)
+                    send_framed(conn, wire)
+                    log.info("[%s] Simulated MITM (forgery) attack", self.vehicle_id)
+                else:
+                    wire = secure_send(bsm, self.session_key, self.private_key, self.logger)
+
+                    if attack == "tamper":
+                        tampered = bytearray(wire)
+                        tampered[-1] ^= 0xFF
+                        send_framed(conn, bytes(tampered))
+                        log.info("[%s] Simulated TAMPER attack", self.vehicle_id)
+                    elif attack == "dos":
+                        for _ in range(30):
+                            send_framed(conn, wire)
+                        log.info("[%s] Simulated DOS attack (30 messages)", self.vehicle_id)
+                    else:
+                        send_framed(conn, wire)
+                        log.info(
+                            "[%s] BSM #%d sent: speed=%.1f km/h",
+                            self.vehicle_id, self._seq, bsm.speed_kmh,
+                        )
+                    self._last_sent_wire = wire
+
                 time.sleep(self.bsm_interval)
             except (ConnectionError, OSError):
                 log.warning("[%s] Connection lost during send", self.vehicle_id)
@@ -448,6 +483,11 @@ class VehicleNode:
                 self.vehicle_id,
             )
             threading.Thread(target=self._accept_loop, daemon=True).start()
+
+    def trigger_attack(self, attack_type: str) -> None:
+        """Trigger an attack on the next message sent."""
+        self.next_attack = attack_type
+        log.info("[%s] Queued attack simulation: %s", self.vehicle_id, attack_type)
 
     # ── Dashboard State ───────────────────────────────────────────
 

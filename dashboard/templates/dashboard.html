@@ -119,6 +119,41 @@
             transition: background 0.2s;
         }
         .btn-clear:hover { background: rgba(248,81,73,0.15); }
+
+        /* ── Attack Simulation ──────────────────────────── */
+        .attack-panel {
+            background: #1f1f1f;
+            border: 1px solid #d29922;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .attack-panel h3 { color: #d29922; font-size: 1em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .attack-panel p { color: #8b949e; font-size: 0.85em; margin-bottom: 16px; }
+        .attack-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-attack {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-attack:hover {
+            border-color: #8b949e;
+            background: #30363d;
+        }
+        .btn-attack:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +188,18 @@
                     <div id="alert-latest">No security alerts</div>
                 </div>
                 <button class="btn-clear" onclick="clearAlerts()">Clear Alerts</button>
+            </div>
+        </div>
+
+        <!-- Attack Simulation Panel -->
+        <div class="attack-panel">
+            <h3>Simulate Attacks</h3>
+            <p>Trigger attacks from this node to its peer to test security defenses. The attacks will be injected into the next outgoing message.</p>
+            <div class="attack-buttons">
+                <button class="btn-attack" id="btn-tamper" onclick="triggerAttack('tamper', this)">Tamper (Modify Bits)</button>
+                <button class="btn-attack" id="btn-replay" onclick="triggerAttack('replay', this)">Replay (Send Old Msg)</button>
+                <button class="btn-attack" id="btn-mitm" onclick="triggerAttack('mitm', this)">MITM (Forge Signature)</button>
+                <button class="btn-attack" id="btn-dos" onclick="triggerAttack('dos', this)">DoS (Flood Network)</button>
             </div>
         </div>
 
@@ -287,6 +334,23 @@
         async function clearAlerts() {
             await fetch('/api/clear-alerts', { method: 'POST' });
             fetchState();
+        }
+
+        async function triggerAttack(attackType, btnElement) {
+            if (btnElement) {
+                btnElement.disabled = true;
+                const originalText = btnElement.textContent;
+                btnElement.textContent = 'Triggered...';
+                setTimeout(() => {
+                    btnElement.textContent = originalText;
+                    btnElement.disabled = false;
+                }, 1500);
+            }
+            try {
+                await fetch('/api/attack/' + attackType, { method: 'POST' });
+            } catch (e) {
+                console.error('Failed to trigger attack', e);
+            }
         }
 
         setInterval(fetchState, 3000);
